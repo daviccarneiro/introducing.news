@@ -33,6 +33,12 @@ const postSchema = {
     ],
     defaultValue: 'fig-01',
   }),
+  coverImage: fields.image({
+    label: 'Imagem de capa (opcional)',
+    description: 'Quando preenchida, substitui a figura abstrata acima. Aceita JPG, PNG, WebP ou SVG.',
+    directory: 'public/images/covers',
+    publicPath: '/images/covers/',
+  }),
   translation: fields.text({
     label: 'Slug da tradução',
     description: 'Slug do arquivo equivalente no outro idioma (sem extensão).',

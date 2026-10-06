@@ -19,7 +19,7 @@ const href = paths.post(locale, slugOf(post));
 
 <article class="card">
   <a class="card__cover" href={href} tabindex="-1" aria-hidden="true">
-    <Cover variant={cover} />
+    <Cover variant={cover} src={post.data.coverImage} />
   </a>
   <div class="card__body">
     <div class="card__meta">

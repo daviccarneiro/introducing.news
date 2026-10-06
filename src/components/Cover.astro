@@ -1,20 +1,32 @@
 ---
 interface Props {
   variant?: 'fig-01' | 'fig-02' | 'fig-03';
+  /** Imagem de capa enviada pelo CMS; quando presente, substitui a figura. */
+  src?: string;
   class?: string;
 }
 
-const { variant = 'fig-01', class: className } = Astro.props;
+const { variant = 'fig-01', src, class: className } = Astro.props;
 ---
 
-<svg
-  class:list={['cover', className]}
-  viewBox="0 0 1200 675"
-  preserveAspectRatio="xMidYMid slice"
-  role="img"
-  aria-hidden="true"
-  focusable="false"
->
+{
+  src ? (
+    <img
+      class:list={['cover', 'cover--image', className]}
+      src={src}
+      alt=""
+      loading="lazy"
+      decoding="async"
+    />
+  ) : (
+    <svg
+      class:list={['cover', className]}
+      viewBox="0 0 1200 675"
+      preserveAspectRatio="xMidYMid slice"
+      role="img"
+      aria-hidden="true"
+      focusable="false"
+    >
   {
     variant === 'fig-01' && (
       <g>
@@ -74,7 +86,9 @@ const { variant = 'fig-01', class: className } = Astro.props;
       </g>
     )
   }
-</svg>
+    </svg>
+  )
+}
 
 <style>
   .cover {
@@ -83,5 +97,6 @@ const { variant = 'fig-01', class: className } = Astro.props;
     aspect-ratio: 16 / 9;
     display: block;
     background: var(--ink-950);
+    object-fit: cover;
   }
 </style>
