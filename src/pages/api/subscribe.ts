@@ -10,19 +10,57 @@ const json = (body: unknown, status = 200) =>
     headers: { 'Content-Type': 'application/json' },
   });
 
+const verifyTurnstile = async (secret: string, token: string, ip: string | null) => {
+  const body = new FormData();
+  body.append('secret', secret);
+  body.append('response', token);
+  if (ip) body.append('remoteip', ip);
+  const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
+    method: 'POST',
+    body,
+  });
+  const result = (await response.json()) as { success?: boolean };
+  return result.success === true;
+};
+
 export const POST: APIRoute = async ({ request }) => {
   let email = '';
   let locale: Locale = DEFAULT_LOCALE;
+  let consent = false;
+  let turnstileToken = '';
+
   try {
-    const data = (await request.json()) as { email?: unknown; locale?: unknown };
+    const data = (await request.json()) as {
+      email?: unknown;
+      locale?: unknown;
+      consent?: unknown;
+      turnstileToken?: unknown;
+    };
     email = typeof data?.email === 'string' ? data.email.trim().toLowerCase() : '';
     if (typeof data?.locale === 'string' && isLocale(data.locale)) locale = data.locale;
+    consent = data?.consent === true;
+    turnstileToken = typeof data?.turnstileToken === 'string' ? data.turnstileToken : '';
   } catch {
     return json({ error: 'Requisição inválida.' }, 400);
   }
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) {
     return json({ error: 'Digite um e-mail válido.' }, 400);
+  }
+
+  if (!consent) {
+    return json({ error: 'É preciso aceitar receber os e-mails para continuar.' }, 400);
+  }
+
+  // CAPTCHA (quando configurado). Bloqueia bots sem exigir duplo opt-in.
+  if (env.TURNSTILE_SECRET_KEY) {
+    const ip = request.headers.get('cf-connecting-ip');
+    const valid = turnstileToken
+      ? await verifyTurnstile(env.TURNSTILE_SECRET_KEY, turnstileToken, ip)
+      : false;
+    if (!valid) {
+      return json({ error: 'Falha na verificação anti-bot. Recarregue e tente de novo.' }, 400);
+    }
   }
 
   const apiKey = env.RESEND_API_KEY;
@@ -40,7 +78,10 @@ export const POST: APIRoute = async ({ request }) => {
   const payload = {
     email,
     unsubscribed: false,
-    properties: { locale },
+    properties: {
+      locale,
+      consent_at: new Date().toISOString(),
+    },
     segments: [{ id: segmentId }],
   };
 

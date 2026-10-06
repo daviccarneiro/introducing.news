@@ -24,6 +24,9 @@ export default defineConfig({
       KEYSTATIC_GITHUB_CLIENT_SECRET: envField.string({ context: 'server', access: 'secret', optional: true }),
       KEYSTATIC_SECRET: envField.string({ context: 'server', access: 'secret', optional: true }),
       PUBLIC_KEYSTATIC_GITHUB_APP_SLUG: envField.string({ context: 'client', access: 'public', optional: true }),
+      // Cloudflare Turnstile (CAPTCHA) na inscrição.
+      TURNSTILE_SECRET_KEY: envField.string({ context: 'server', access: 'secret', optional: true }),
+      PUBLIC_TURNSTILE_SITE_KEY: envField.string({ context: 'client', access: 'public', optional: true }),
     },
   },
   adapter: cloudflare(),

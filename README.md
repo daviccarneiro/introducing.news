@@ -68,14 +68,12 @@ Nunca commite valores. O repositório é público.
 
 - **Local**: Doppler (`doppler.yaml` aponta para `introducing-news/dev_personal`) ou `.dev.vars`.
 - **GitHub Actions** (Settings → Secrets and variables → Actions):
-  - `RESEND_API_KEY`
-  - `RESEND_SEGMENT_PT` / `RESEND_SEGMENT_EN`
-  - `CLOUDFLARE_API_TOKEN`
-  - `CLOUDFLARE_ACCOUNT_ID`
-- **Runtime do Worker** (produção): `npx wrangler secret put RESEND_API_KEY`, `RESEND_SEGMENT_PT`, `RESEND_SEGMENT_EN`.
+  - Secrets: `RESEND_API_KEY`, `RESEND_SEGMENT_PT` / `RESEND_SEGMENT_EN`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `KEYSTATIC_GITHUB_CLIENT_ID`, `KEYSTATIC_GITHUB_CLIENT_SECRET`
+  - Variables: `KEYSTATIC_GITHUB_APP_SLUG`, `PUBLIC_TURNSTILE_SITE_KEY`
+- **Runtime do Worker** (produção): `npx wrangler secret put RESEND_API_KEY`, `RESEND_SEGMENT_PT`, `RESEND_SEGMENT_EN`, `KEYSTATIC_GITHUB_CLIENT_ID`, `KEYSTATIC_GITHUB_CLIENT_SECRET`, `KEYSTATIC_SECRET`, `TURNSTILE_SECRET_KEY`.
   Depois de definir/alterar segredos manualmente, rode `npx wrangler deploy` novamente — o `secret put` sozinho publica uma versão sem a configuração de assets gerada pelo adapter.
 
-No Resend, a audiência é dividida em dois **segments** (`PT` e `EN`) e cada contato recebe a propriedade `locale`. O formulário de inscrição permite escolher o idioma dos e-mails e a API inscreve o contato no segmento correspondente.
+No Resend, a audiência é dividida em dois **segments** (`PT` e `EN`) e cada contato recebe as propriedades `locale` e `consent_at`. O formulário permite escolher o idioma dos e-mails, exige **consentimento explícito** (checkbox) e passa pelo **Cloudflare Turnstile** (anti-bot) antes de inscrever o contato no segmento correspondente.
 
 ## Enviar uma edição por e-mail
 
@@ -107,6 +105,7 @@ Sem essas credenciais o CMS roda em modo local (`npm run dev` → `/keystatic`),
 
 - [x] **DNS do domínio de envio**: registros adicionados e verificados no Resend — `introducing.news` está `verified` e envia por `introducing.news <oi@introducing.news>`.
 - [x] **Segredos de deploy**: `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID` configurados; o workflow Deploy publica automaticamente no push para `main`.
-- [ ] **Domínio customizado** (opcional): anexar `introducing.news` ao Worker (Cloudflare → Workers → introducing-news → Settings → Domains & Routes).
-- [ ] **Keystatic em produção (opcional)**: criar um GitHub OAuth App, definir `KEYSTATIC_GITHUB_CLIENT_ID`/`KEYSTATIC_GITHUB_CLIENT_SECRET` no Worker e criar um KV namespace `SESSION` para editar pela web.
-- [ ] **Double opt-in** (opcional): habilitar confirmação por e-mail na inscrição.
+- [x] **Domínio customizado**: `introducing.news` anexado ao Worker (certificado emitido) e servindo o site.
+- [x] **Keystatic em modo GitHub**: GitHub App criado e credenciais configuradas (Worker, Doppler, Actions). Edição pela web em `/keystatic` para quem tem acesso de escrita ao repositório.
+- [x] **Consentimento + anti-bot**: checkbox de consentimento obrigatório (registrado em `consent_at` no contato) e Cloudflare Turnstile no formulário — escolhido no lugar do double opt-in. Double opt-in segue como evolução opcional.
+- [ ] **Double opt-in** (opcional, futuro): confirmação por e-mail com link antes de entrar na lista.

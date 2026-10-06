@@ -47,6 +47,8 @@ export const ui = {
     'form.invalid': 'Digite um e-mail válido.',
     'form.network': 'Falha de rede. Tente de novo.',
     'form.lang.legend': 'Idioma dos e-mails',
+    'form.consent': 'Aceito receber e-mails da introducing.news. Sem spam; posso cancelar quando quiser.',
+    'form.consentError': 'É preciso aceitar para continuar.',
     'footer.blurb':
       'Notas curtas sobre tecnologia, sem o hype. Publicadas a cada dois dias, direto no seu e-mail.',
     'footer.navigate': 'Navegar',
@@ -111,6 +113,8 @@ export const ui = {
     'form.invalid': 'Enter a valid email.',
     'form.network': 'Network error. Please try again.',
     'form.lang.legend': 'Email language',
+    'form.consent': 'I agree to receive emails from introducing.news. No spam; I can unsubscribe anytime.',
+    'form.consentError': 'Please accept to continue.',
     'footer.blurb':
       'Short notes on technology, without the hype. Published every two days, straight to your inbox.',
     'footer.navigate': 'Browse',

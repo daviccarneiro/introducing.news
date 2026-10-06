@@ -11,6 +11,7 @@ const { id = 'assinar', compact = false } = Astro.props;
 const locale = getLocale(Astro.url);
 const t = useTranslations(locale);
 const inputId = `email-${id}-${compact ? 'c' : 'f'}`;
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 ---
 
 <form
@@ -22,6 +23,7 @@ const inputId = `email-${id}-${compact ? 'c' : 'f'}`;
   data-msg-error={t('form.error')}
   data-msg-invalid={t('form.invalid')}
   data-msg-network={t('form.network')}
+  data-msg-consent={t('form.consentError')}
   novalidate
 >
   <fieldset class="subscribe__lang">
@@ -37,7 +39,7 @@ const inputId = `email-${id}-${compact ? 'c' : 'f'}`;
   </fieldset>
 
   <div class="subscribe__row">
-    <label class="visually-hidden" for={inputId}>{t('form.lang.legend')}</label>
+    <label class="visually-hidden" for={inputId}>{t('form.placeholder')}</label>
     <input
       type="email"
       name="email"
@@ -48,6 +50,23 @@ const inputId = `email-${id}-${compact ? 'c' : 'f'}`;
     />
     <button type="submit">{t('form.button')}</button>
   </div>
+
+  <label class="consent">
+    <input type="checkbox" name="consent" required />
+    <span>{t('form.consent')}</span>
+  </label>
+
+  {
+    turnstileSiteKey && (
+      <div
+        class="cf-turnstile"
+        data-sitekey={turnstileSiteKey}
+        data-theme="light"
+        data-language={locale === 'pt' ? 'pt-BR' : 'en'}
+      />
+    )
+  }
+
   <p class="subscribe__status meta" role="status" aria-live="polite" hidden></p>
 </form>
 
@@ -139,6 +158,21 @@ const inputId = `email-${id}-${compact ? 'c' : 'f'}`;
     cursor: progress;
   }
 
+  .consent {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--space-2);
+    font: 400 13px/1.45 var(--font-sans);
+    color: var(--muted-foreground);
+    cursor: pointer;
+    max-width: 460px;
+  }
+
+  .consent input {
+    margin-top: 2px;
+    accent-color: var(--accent-600);
+  }
+
   .subscribe__status[data-state='ok'] {
     color: var(--accent-soft-foreground);
   }
@@ -162,6 +196,8 @@ const inputId = `email-${id}-${compact ? 'c' : 'f'}`;
       const button = form.querySelector('button');
       const input = form.querySelector('input[type="email"]');
       const lang = form.querySelector('input[name="locale"]:checked');
+      const consent = form.querySelector('input[name="consent"]');
+      const turnstileInput = form.querySelector('[name="cf-turnstile-response"]');
       if (
         !(status instanceof HTMLElement) ||
         !(button instanceof HTMLButtonElement) ||
@@ -176,11 +212,18 @@ const inputId = `email-${id}-${compact ? 'c' : 'f'}`;
         error: form.dataset.msgError ?? 'Error',
         invalid: form.dataset.msgInvalid ?? 'Invalid',
         network: form.dataset.msgNetwork ?? 'Network',
+        consent: form.dataset.msgConsent ?? 'Consent required',
       };
 
       const email = input.value.trim();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         status.textContent = messages.invalid;
+        status.dataset.state = 'error';
+        status.hidden = false;
+        return;
+      }
+      if (consent instanceof HTMLInputElement && !consent.checked) {
+        status.textContent = messages.consent;
         status.dataset.state = 'error';
         status.hidden = false;
         return;
@@ -198,6 +241,9 @@ const inputId = `email-${id}-${compact ? 'c' : 'f'}`;
           body: JSON.stringify({
             email,
             locale: lang instanceof HTMLInputElement ? lang.value : 'pt',
+            consent: true,
+            turnstileToken:
+              turnstileInput instanceof HTMLInputElement ? turnstileInput.value : '',
           }),
         });
         if (response.ok) {
@@ -215,6 +261,8 @@ const inputId = `email-${id}-${compact ? 'c' : 'f'}`;
         status.hidden = false;
         button.disabled = false;
         button.textContent = original;
+        const turnstile = (window as unknown as { turnstile?: { reset(): void } }).turnstile;
+        turnstile?.reset();
       }
     });
   });
