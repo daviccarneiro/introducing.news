@@ -4,11 +4,40 @@ import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
 import { isLocale, type Locale } from '../../i18n/config';
 
-const json = (body: unknown, status = 200) =>
+const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), {
     status,
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', ...headers },
   });
+
+/**
+ * Rate limit simples por IP usando a Cache API (por colo, aproximado).
+ * Nunca bloqueia por falha do limitador — é uma camada extra além do Turnstile.
+ */
+const RATE_LIMIT = { max: 5, windowSeconds: 600 };
+
+const isRateLimited = async (request: Request, ip: string | null): Promise<boolean> => {
+  if (!ip) return false;
+  try {
+    const cache = (caches as unknown as { default: Cache }).default;
+    const key = new Request(
+      new URL(`/.internal/rate-limit/subscribe/${encodeURIComponent(ip)}`, request.url).toString(),
+      { method: 'GET' },
+    );
+    const cached = await cache.match(key);
+    const count = cached ? Number(await cached.text()) || 0 : 0;
+    if (count >= RATE_LIMIT.max) return true;
+    await cache.put(
+      key,
+      new Response(String(count + 1), {
+        headers: { 'Cache-Control': `max-age=${RATE_LIMIT.windowSeconds}` },
+      }),
+    );
+    return false;
+  } catch {
+    return false;
+  }
+};
 
 const verifyTurnstile = async (secret: string, token: string, ip: string | null) => {
   const body = new FormData();
@@ -57,9 +86,17 @@ export const POST: APIRoute = async ({ request }) => {
     return json({ error: 'Escolha o idioma dos e-mails.' }, 400);
   }
 
+  const ip = request.headers.get('cf-connecting-ip');
+  if (await isRateLimited(request, ip)) {
+    return json(
+      { error: 'Muitas tentativas. Tente de novo em alguns minutos.' },
+      429,
+      { 'Retry-After': String(RATE_LIMIT.windowSeconds) },
+    );
+  }
+
   // CAPTCHA (quando configurado). Bloqueia bots sem exigir duplo opt-in.
   if (env.TURNSTILE_SECRET_KEY) {
-    const ip = request.headers.get('cf-connecting-ip');
     const valid = turnstileToken
       ? await verifyTurnstile(env.TURNSTILE_SECRET_KEY, turnstileToken, ip)
       : false;

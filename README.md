@@ -2,6 +2,8 @@
 
 Newsletter bilíngue (PT/EN) sobre tecnologia, sem o ruído do hype — site estático com edições publicadas na web e enviadas por e-mail no idioma escolhido pelo leitor.
 
+> Para agentes de código e manutenção (arquitetura, segredos, armadilhas e upgrades): veja [`AGENTS.md`](./AGENTS.md).
+
 ## Stack
 
 | Camada | Ferramenta |

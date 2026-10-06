@@ -15,16 +15,18 @@ jobs:
   send:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: npm
       - name: Install
         run: npm ci
       - name: Send broadcast
-        run: node scripts/send-newsletter.mjs "${{ inputs.slug }}"
+        run: node scripts/send-newsletter.mjs "$SLUG"
         env:
+          SLUG: ${{ inputs.slug }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          RESEND_AUDIENCE_ID: ${{ secrets.RESEND_AUDIENCE_ID }}
+          RESEND_SEGMENT_PT: ${{ secrets.RESEND_SEGMENT_PT }}
+          RESEND_SEGMENT_EN: ${{ secrets.RESEND_SEGMENT_EN }}
           SITE_URL: https://introducing.news
