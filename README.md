@@ -75,7 +75,7 @@ O Resend gerencia o link de descadastro automaticamente em cada Broadcast.
 ## Pendências de infraestrutura
 
 - [ ] **DNS do domínio de envio**: adicionar no Cloudflare os registros do domínio `introducing.news` criado no Resend (DKIM, SPF e return-path). Enquanto não verificar, os envios usam o domínio `davi.cc`.
-- [ ] **Segredos de deploy**: criar `CLOUDFLARE_API_TOKEN` (permissão Workers Scripts:Edit) e `CLOUDFLARE_ACCOUNT_ID` e salvar nos secrets do repositório.
+- [ ] **Segredos de deploy**: criar um `CLOUDFLARE_API_TOKEN` (permissão Workers Scripts:Edit) e salvá-lo no secret do repositório. O `CLOUDFLARE_ACCOUNT_ID` já está configurado. Sem o token, o workflow Deploy roda o build e pula a publicação.
 - [ ] **Domínio customizado** (opcional): anexar `introducing.news` ao Worker (Cloudflare → Workers → introducing-news → Settings → Domains & Routes).
 - [ ] **Keystatic em produção (opcional)**: criar um GitHub OAuth App, definir `KEYSTATIC_GITHUB_CLIENT_ID`/`KEYSTATIC_GITHUB_CLIENT_SECRET` no Worker e criar um KV namespace `SESSION` para editar pela web.
 - [ ] **Double opt-in** (opcional): habilitar confirmação por e-mail na inscrição.
