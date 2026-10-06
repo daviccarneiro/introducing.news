@@ -5,10 +5,9 @@ import { getLocale } from '../i18n/utils';
 interface Props {
   id?: string;
   compact?: boolean;
-  centered?: boolean;
 }
 
-const { id = 'assinar', compact = false, centered = false } = Astro.props;
+const { id = 'assinar', compact = false } = Astro.props;
 const locale = getLocale(Astro.url);
 const t = useTranslations(locale);
 const inputId = `email-${id}-${compact ? 'c' : 'f'}`;
@@ -16,9 +15,10 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 ---
 
 <form
-  class:list={['subscribe', { 'subscribe--compact': compact, 'subscribe--centered': centered }]}
+  class:list={['subscribe', { 'subscribe--compact': compact }]}
   id={id}
   data-subscribe
+  data-msg-lang={t('form.langRequired')}
   data-msg-sending={t('form.sending')}
   data-msg-success={t('form.success')}
   data-msg-error={t('form.error')}
@@ -30,11 +30,11 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
   <fieldset class="subscribe__lang">
     <legend class="visually-hidden">{t('form.lang.legend')}</legend>
     <label class="lang-pill">
-      <input type="radio" name="locale" value="pt" checked={locale === 'pt'} />
+      <input type="radio" name="locale" value="pt" />
       <span>Português</span>
     </label>
     <label class="lang-pill">
-      <input type="radio" name="locale" value="en" checked={locale === 'en'} />
+      <input type="radio" name="locale" value="en" />
       <span>English</span>
     </label>
   </fieldset>
@@ -76,6 +76,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     display: flex;
     flex-direction: column;
     gap: var(--space-3);
+    scroll-margin-top: var(--space-16);
   }
 
   .subscribe__lang {
@@ -186,19 +187,6 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     width: 100%;
     max-width: 460px;
   }
-
-  .subscribe--centered {
-    align-items: center;
-  }
-
-  .subscribe--centered .subscribe__lang,
-  .subscribe--centered .subscribe__row {
-    justify-content: center;
-  }
-
-  .subscribe--centered .consent {
-    justify-content: center;
-  }
 </style>
 
 <script>
@@ -221,6 +209,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
       }
 
       const messages = {
+        lang: form.dataset.msgLang ?? '…',
         sending: form.dataset.msgSending ?? '…',
         success: form.dataset.msgSuccess ?? 'OK',
         error: form.dataset.msgError ?? 'Error',
@@ -232,6 +221,12 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
       const email = input.value.trim();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         status.textContent = messages.invalid;
+        status.dataset.state = 'error';
+        status.hidden = false;
+        return;
+      }
+      if (!(lang instanceof HTMLInputElement)) {
+        status.textContent = messages.lang;
         status.dataset.state = 'error';
         status.hidden = false;
         return;
@@ -254,7 +249,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email,
-            locale: lang instanceof HTMLInputElement ? lang.value : 'pt',
+            locale: lang.value,
             consent: true,
             turnstileToken:
               turnstileInput instanceof HTMLInputElement ? turnstileInput.value : '',

@@ -1,0 +1,64 @@
+---
+import { LOCALES, OTHER, paths } from '../i18n/config';
+import { useTranslations } from '../i18n/ui';
+import { getLocale, languageSwitchHref, otherLocalePath } from '../i18n/utils';
+
+interface Props {
+  /** Caminho equivalente no outro idioma (posts traduzidos). */
+  alternate?: string;
+}
+
+const { alternate } = Astro.props;
+const locale = getLocale(Astro.url);
+const t = useTranslations(locale);
+const other = OTHER[locale];
+const nextPath = otherLocalePath(Astro.url, alternate);
+---
+
+<div class="lang" role="group" aria-label={t('nav.language')}>
+  {
+    LOCALES.map((option) =>
+      option === locale ? (
+        <span class="lang__item lang__item--active" aria-current="true">
+          {option.toUpperCase()}
+        </span>
+      ) : (
+        <a
+          class="lang__item"
+          href={languageSwitchHref(option, option === other ? nextPath : paths.home(option))}
+        >
+          {option.toUpperCase()}
+        </a>
+      ),
+    )
+  }
+</div>
+
+<style>
+  .lang {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    padding: 2px;
+  }
+
+  .lang__item {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 30px;
+    height: 24px;
+    border-radius: var(--radius-full);
+    font: 500 11px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-decoration: none;
+    color: var(--muted-foreground);
+  }
+
+  .lang__item--active {
+    background: var(--foreground);
+    color: var(--background);
+  }
+</style>

@@ -1,8 +1,14 @@
 ---
+import LanguageSwitch from './LanguageSwitch.astro';
 import { paths } from '../i18n/config';
 import { useTranslations } from '../i18n/ui';
 import { getLocale } from '../i18n/utils';
 
+interface Props {
+  alternate?: string;
+}
+
+const { alternate } = Astro.props;
 const locale = getLocale(Astro.url);
 const t = useTranslations(locale);
 const year = new Date().getFullYear();
@@ -49,6 +55,7 @@ const year = new Date().getFullYear();
 
       <div class="footer__aside">
         <a href={paths.archive(locale)}>{t('nav.list')}</a>
+        <LanguageSwitch alternate={alternate} />
         <a class="button" href={`${paths.home(locale)}#assinar`}>{t('nav.subscribe')}</a>
       </div>
     </div>
@@ -57,10 +64,7 @@ const year = new Date().getFullYear();
 
     <div class="footer__bottom">
       <p class="meta">© {year} introducing.news</p>
-      <p class="meta">
-        {t('footer.madeBy')}
-        <a href="https://www.linkedin.com/in/daviccarneiro/" target="_blank" rel="noopener">Davi Carneiro</a>
-      </p>
+      <p class="meta">{t('footer.madeBy')}{' '}<a href="https://www.linkedin.com/in/daviccarneiro/" target="_blank" rel="noopener">Davi Carneiro</a></p>
     </div>
   </div>
 </footer>

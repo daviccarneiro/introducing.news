@@ -64,10 +64,10 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     )}
   </head>
   <body>
-    <SiteHeader alternate={alternate} />
+    <SiteHeader />
     <main>
       <slot />
     </main>
-    <SiteFooter />
+    <SiteFooter alternate={alternate} />
   </body>
 </html>

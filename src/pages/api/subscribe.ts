@@ -2,7 +2,7 @@ export const prerender = false;
 
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import { DEFAULT_LOCALE, isLocale, type Locale } from '../../i18n/config';
+import { isLocale, type Locale } from '../../i18n/config';
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -25,7 +25,7 @@ const verifyTurnstile = async (secret: string, token: string, ip: string | null)
 
 export const POST: APIRoute = async ({ request }) => {
   let email = '';
-  let locale: Locale = DEFAULT_LOCALE;
+  let locale: Locale | null = null;
   let consent = false;
   let turnstileToken = '';
 
@@ -50,6 +50,11 @@ export const POST: APIRoute = async ({ request }) => {
 
   if (!consent) {
     return json({ error: 'É preciso aceitar receber os e-mails para continuar.' }, 400);
+  }
+
+  // Idioma é obrigatório: o formulário não pré-seleciona nenhum.
+  if (!locale) {
+    return json({ error: 'Escolha o idioma dos e-mails.' }, 400);
   }
 
   // CAPTCHA (quando configurado). Bloqueia bots sem exigir duplo opt-in.

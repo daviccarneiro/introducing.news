@@ -29,11 +29,8 @@ const [featured] = posts;
         stroke-linecap="round"></path>
     </svg>
     <p class="hero__sub">{t('home.sub')}</p>
-  </section>
-
-  <section class="subscribe-hero container">
-    <SubscribeForm id="assinar" centered />
-    <p class="meta subscribe-hero__micro">{t('home.micro')}</p>
+    <SubscribeForm id="assinar" />
+    <p class="meta hero__micro">{t('home.micro')}</p>
   </section>
 
   {
@@ -41,8 +38,14 @@ const [featured] = posts;
       <section class="featured">
         <div class="container">
           <div class="section-head">
-            <p class="eyebrow">{t('home.latest.kicker')}</p>
-            <h2>{t('home.latest.title')}</h2>
+            <div>
+              <p class="eyebrow">{t('home.latest.kicker')}</p>
+              <h2>{t('home.latest.title')}</h2>
+            </div>
+            <a class="button button--secondary" href={paths.archive(locale)}>
+              {t('home.seeAll')}
+              <span aria-hidden="true">↗</span>
+            </a>
           </div>
 
           <article class="featured__card">
@@ -78,13 +81,6 @@ const [featured] = posts;
               <Cover variant={featured.data.cover} src={featured.data.coverImage} />
             </a>
           </article>
-
-          <div class="featured__more">
-            <a class="button button--secondary" href={paths.archive(locale)}>
-              {t('home.seeAll')}
-              <span aria-hidden="true">↗</span>
-            </a>
-          </div>
         </div>
       </section>
     )
@@ -122,7 +118,7 @@ const [featured] = posts;
 
 <style>
   .hero {
-    padding-block: var(--space-24) var(--space-8);
+    padding-block: var(--space-24) var(--space-20);
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -146,25 +142,15 @@ const [featured] = posts;
     max-width: 640px;
   }
 
-  .subscribe-hero {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-3);
-    padding-bottom: var(--space-20);
-  }
-
-  .subscribe-hero :global(.subscribe) {
-    width: 100%;
-    max-width: 520px;
-  }
-
-  .subscribe-hero__micro {
+  .hero__micro {
     margin: 0;
-    text-align: center;
   }
 
   .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-6);
     margin-bottom: var(--space-6);
   }
 
@@ -246,12 +232,6 @@ const [featured] = posts;
     color: var(--accent-soft-foreground);
     font: 500 11px/1 var(--font-mono);
     letter-spacing: 0.06em;
-  }
-
-  .featured__more {
-    display: flex;
-    justify-content: center;
-    margin-top: var(--space-8);
   }
 
   .cta {
