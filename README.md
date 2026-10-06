@@ -86,6 +86,23 @@ No Resend, a audiência é dividida em dois **segments** (`PT` e `EN`) e cada co
 
 O Resend gerencia o link de descadastro automaticamente em cada Broadcast.
 
+## CMS em produção (Keystatic · modo GitHub) — opcional
+
+Para editar pela web em `https://introducing.news/keystatic`:
+
+1. Crie um **GitHub App** (Settings → Developer settings → GitHub Apps → New):
+   - Homepage URL: `https://introducing.news`
+   - Callback URLs: `https://introducing.news/api/keystatic/github/oauth/callback` e `http://127.0.0.1:4321/api/keystatic/github/oauth/callback`
+   - Permissions → Repository permissions: **Contents: Read and write** (Metadata: Read vem por padrão)
+   - Instale o app apenas no repositório `daviccarneiro/introducing.news`
+2. Guarde o **Client ID**, um **Client Secret** e o **slug** do app.
+3. Configure:
+   - Doppler/Worker (runtime): `KEYSTATIC_GITHUB_CLIENT_ID`, `KEYSTATIC_GITHUB_CLIENT_SECRET`, `KEYSTATIC_SECRET` (string aleatória com 32+ caracteres).
+   - GitHub Actions: secrets `KEYSTATIC_GITHUB_CLIENT_ID` / `KEYSTATIC_GITHUB_CLIENT_SECRET` e a variable `KEYSTATIC_GITHUB_APP_SLUG`.
+4. Faça deploy. O Keystatic passa a autenticar via GitHub e commita direto no repositório.
+
+Sem essas credenciais o CMS roda em modo local (`npm run dev` → `/keystatic`), salvando arquivos no disco.
+
 ## Pendências de infraestrutura
 
 - [x] **DNS do domínio de envio**: registros adicionados e verificados no Resend — `introducing.news` está `verified` e envia por `introducing.news <oi@introducing.news>`.
