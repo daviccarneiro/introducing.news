@@ -103,11 +103,6 @@ Para editar pela web em `https://introducing.news/keystatic`:
 
 Sem essas credenciais o CMS roda em modo local (`npm run dev` → `/keystatic`), salvando arquivos no disco.
 
-## Pendências de infraestrutura
+## Pendências
 
-- [x] **DNS do domínio de envio**: registros adicionados e verificados no Resend — `introducing.news` está `verified` e envia por `introducing.news <oi@introducing.news>`.
-- [x] **Segredos de deploy**: `CLOUDFLARE_API_TOKEN` e `CLOUDFLARE_ACCOUNT_ID` configurados; o workflow Deploy publica automaticamente no push para `main`.
-- [x] **Domínio customizado**: `introducing.news` anexado ao Worker (certificado emitido) e servindo o site.
-- [x] **Keystatic em modo GitHub**: GitHub App criado e credenciais configuradas (Worker, Doppler, Actions). Edição pela web em `/keystatic` para quem tem acesso de escrita ao repositório.
-- [x] **Consentimento + anti-bot**: checkbox de consentimento obrigatório (registrado em `consent_at` no contato) e Cloudflare Turnstile no formulário — escolhido no lugar do double opt-in. Double opt-in segue como evolução opcional.
-- [ ] **Double opt-in** (opcional, futuro): confirmação por e-mail com link antes de entrar na lista.
+A lista viva de pendências e melhorias (segurança, produto e manutenção) fica em [`TODO.md`](./TODO.md).

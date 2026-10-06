@@ -151,6 +151,7 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail → idioma → Assinar;
 
 ## Referências
 
+- Pendências e melhorias conhecidas: [`TODO.md`](./TODO.md).
 - Figma: arquivo "introducing.news — Design" (Fundações/Componentes/Telas; tokens espelhados no CSS).
 - Painéis: Resend (Domains/Contacts/Segments), Cloudflare (Worker `introducing-news`, Turnstile, DNS), Doppler (projeto `introducing-news`).
 - Rotas de API: `POST /api/subscribe` (inscrição), `GET /api/lang` (troca de idioma), `/api/keystatic/*` (CMS), `/keystatic` (admin).
