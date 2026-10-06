@@ -135,6 +135,8 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail → idioma → Assinar;
 - `.dev.vars`, `.env*`, `dist/`, `.wrangler/` são gitignored — mantenha assim.
 - `worker-configuration.d.ts` contém apenas **nomes** de variáveis; pode ser versionado.
 - Formulário: e-mail validado, consentimento obrigatório, Turnstile e rate limit por IP; a API **não** expõe nenhum endpoint de leitura de contatos.
+- Defesa em profundidade (opcional): criar uma regra de **rate limiting no WAF do Cloudflare** para `/api/subscribe` (o token de deploy atual não tem permissão de WAF; faça pelo painel).
+- Dependabot ativo (`.github/dependabot.yml`): atualizações semanais de npm e GitHub Actions, com alertas de vulnerabilidade habilitados no repositório.
 - `public/_headers` aplica CSP, HSTS, `nosniff`, `Referrer-Policy` e `frame-ancestors 'none'`. Ao adicionar scripts/iframes/fontes externas, atualize a CSP junto.
 - A `RESEND_API_KEY` é full-access (precisa escrever contatos). Mantenha-a somente em segredos; se vazar, rotacione imediatamente.
 - Keystatic em produção exige login GitHub com acesso de escrita ao repositório (GitHub App com `Contents: Read and write`).
