@@ -34,12 +34,12 @@ export function readingTime(post: Post): number {
 }
 
 export function formatDate(date: Date, locale: Locale): string {
-  return new Intl.DateTimeFormat(locale === 'pt' ? 'pt-BR' : 'en-US', {
+  const formatted = new Intl.DateTimeFormat(locale === 'pt' ? 'pt-BR' : 'en-US', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
   })
     .format(date)
-    .replace(/\./g, '')
-    .toUpperCase();
+    .replace(/\./g, '');
+  return locale === 'pt' ? formatted.replace(/\s+de\s+/g, ' ').toLowerCase() : formatted;
 }

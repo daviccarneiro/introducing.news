@@ -27,18 +27,6 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
   data-msg-consent={t('form.consentError')}
   novalidate
 >
-  <fieldset class="subscribe__lang">
-    <legend class="visually-hidden">{t('form.lang.legend')}</legend>
-    <label class="lang-pill">
-      <input type="radio" name="locale" value="pt" />
-      <span>Português</span>
-    </label>
-    <label class="lang-pill">
-      <input type="radio" name="locale" value="en" />
-      <span>English</span>
-    </label>
-  </fieldset>
-
   <div class="subscribe__row">
     <label class="visually-hidden" for={inputId}>{t('form.placeholder')}</label>
     <input
@@ -49,6 +37,19 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
       autocomplete="email"
       required
     />
+
+    <fieldset class="subscribe__lang">
+      <legend class="visually-hidden">{t('form.lang.legend')}</legend>
+      <label class="lang-pill">
+        <input type="radio" name="locale" value="pt" />
+        <span>Português</span>
+      </label>
+      <label class="lang-pill">
+        <input type="radio" name="locale" value="en" />
+        <span>English</span>
+      </label>
+    </fieldset>
+
     <button type="submit">{t('form.button')}</button>
   </div>
 
@@ -145,13 +146,19 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     padding-inline: var(--space-5);
     border: 0;
     border-radius: var(--radius-md);
-    background: var(--accent);
-    color: var(--accent-foreground);
+    background: var(--ink-200);
+    color: var(--ink-500);
     font: 500 15px/1 var(--font-sans);
     cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease;
   }
 
-  button:hover {
+  .subscribe[data-lang] button {
+    background: var(--accent);
+    color: var(--accent-foreground);
+  }
+
+  .subscribe[data-lang] button:hover {
     background: var(--accent-600);
   }
 
@@ -191,6 +198,18 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 
 <script>
   document.querySelectorAll('[data-subscribe]').forEach((form) => {
+    if (!(form instanceof HTMLFormElement)) return;
+
+    const syncButtonState = () => {
+      const selected = form.querySelector('input[name="locale"]:checked');
+      if (selected instanceof HTMLInputElement) form.dataset.lang = selected.value;
+      else delete form.dataset.lang;
+    };
+    form.querySelectorAll('input[name="locale"]').forEach((radio) => {
+      radio.addEventListener('change', syncButtonState);
+    });
+    syncButtonState();
+
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       if (!(form instanceof HTMLFormElement)) return;

@@ -21,7 +21,8 @@ export const ui = {
     'home.cta.browse': 'Ver arquivo',
     'archive.eyebrow': 'Arquivo',
     'archive.title': 'Todas as edições',
-    'archive.sub': '{count} edições sobre ferramentas, dados e ideias — em português.',
+    'archive.sub':
+      'Uma seleção curada de ferramentas, dados e ideias — atualizada continuamente, com fontes e referências em cada edição.',
     'archive.empty': 'Nada por aqui ainda.',
     'archive.band.title': 'Não perca a próxima edição',
     'archive.band.body': 'Um e-mail a cada dois dias. Grátis, sem spam. Cancele quando quiser.',
@@ -81,7 +82,8 @@ export const ui = {
     'home.cta.browse': 'Browse essays',
     'archive.eyebrow': 'Essays',
     'archive.title': 'All essays',
-    'archive.sub': '{count} essays on tools, data and ideas — in English.',
+    'archive.sub':
+      'A curated selection of tools, data and ideas — updated continuously, with sources and references in every edition.',
     'archive.empty': 'Nothing here yet.',
     'archive.band.title': "Don't miss the next edition",
     'archive.band.body': 'One email every two days. Free, no spam. Unsubscribe anytime.',

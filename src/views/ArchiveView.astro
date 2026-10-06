@@ -23,7 +23,7 @@ const posts = await getPosts(locale);
   <section class="head container">
     <p class="eyebrow">{t('archive.eyebrow')}</p>
     <h1>{t('archive.title')}</h1>
-    <p class="head__sub">{t('archive.sub', { count: posts.length })}</p>
+    <p class="head__sub">{t('archive.sub')}</p>
   </section>
 
   <section class="list container">
@@ -33,18 +33,18 @@ const posts = await getPosts(locale);
     {
       posts.map((post) => (
         <a class="row" href={paths.post(locale, slugOf(post))}>
-          <time class="meta row__date" datetime={post.data.publishedAt.toISOString()}>
-            {formatDate(post.data.publishedAt, locale)}
-          </time>
-          <div class="row__body">
-            <div class="row__title-line">
-              <h2>{post.data.title}</h2>
-              <Badge tone="accent">{categoryLabel(t, post.data.category)}</Badge>
-            </div>
-            <p class="row__excerpt">{post.data.description}</p>
-            <p class="meta">
+          <div class="row__meta">
+            <time class="meta" datetime={post.data.publishedAt.toISOString()}>
+              {formatDate(post.data.publishedAt, locale)}
+            </time>
+            <Badge tone="accent">{categoryLabel(t, post.data.category)}</Badge>
+            <span class="meta row__reading">
               {readingTime(post)} {t('post.minRead')}
-            </p>
+            </span>
+          </div>
+          <div class="row__body">
+            <h2>{post.data.title}</h2>
+            <p class="row__excerpt">{post.data.description}</p>
           </div>
           <span class="row__arrow" aria-hidden="true">↗</span>
         </a>
@@ -105,17 +105,21 @@ const posts = await getPosts(locale);
     background: var(--muted);
   }
 
+  .row__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-2) var(--space-3);
+  }
+
+  .row__reading {
+    flex-basis: 100%;
+  }
+
   .row__body {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
-  }
-
-  .row__title-line {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    flex-wrap: wrap;
   }
 
   .row h2 {
@@ -157,7 +161,7 @@ const posts = await getPosts(locale);
 
   @media (min-width: 768px) {
     .row {
-      grid-template-columns: 120px 1fr 24px;
+      grid-template-columns: 200px 1fr 24px;
       align-items: center;
       gap: var(--space-8);
     }

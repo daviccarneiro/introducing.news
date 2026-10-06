@@ -18,7 +18,7 @@ const [featured] = posts;
 ---
 
 <Base>
-  <section class="hero container">
+  <section class="hero container" id="assinar">
     <p class="eyebrow">{t('home.eyebrow')}</p>
     <h1>{t('home.title')}</h1>
     <svg class="doodle" width="240" height="17" viewBox="0 0 240 17" fill="none" aria-hidden="true">
@@ -29,7 +29,7 @@ const [featured] = posts;
         stroke-linecap="round"></path>
     </svg>
     <p class="hero__sub">{t('home.sub')}</p>
-    <SubscribeForm id="assinar" />
+    <SubscribeForm id="assinar-form" />
     <p class="meta hero__micro">{t('home.micro')}</p>
   </section>
 
@@ -52,7 +52,6 @@ const [featured] = posts;
             <div class="featured__body">
               <div class="featured__meta">
                 <Badge tone="accent">{categoryLabel(t, featured.data.category)}</Badge>
-                <span class="meta">{formatDate(featured.data.publishedAt, locale)}</span>
               </div>
               <h3>
                 <a href={paths.post(locale, slugOf(featured))}>{featured.data.title}</a>
@@ -62,8 +61,9 @@ const [featured] = posts;
                 <span class="avatar" aria-hidden="true">DC</span>
                 <div>
                   <p class="featured__name">Davi Carneiro</p>
-                  <p class="meta">
-                    {formatDate(featured.data.publishedAt, locale)} · {readingTime(featured)} {t('post.minRead')}
+                  <p class="meta featured__byline">
+                    <span>{formatDate(featured.data.publishedAt, locale)}</span>
+                    <span>{readingTime(featured)} {t('post.minRead')}</span>
                   </p>
                 </div>
               </div>
@@ -221,6 +221,11 @@ const [featured] = posts;
     font: 500 17px/1.4 var(--font-sans);
   }
 
+  .featured__byline {
+    display: flex;
+    gap: var(--space-2);
+  }
+
   .avatar {
     display: inline-flex;
     align-items: center;
@@ -324,6 +329,18 @@ const [featured] = posts;
   @media (max-width: 640px) {
     .doodle {
       margin-left: 0;
+    }
+
+    .featured__byline {
+      flex-direction: column;
+      gap: 0;
+    }
+
+    .section-head .button--secondary {
+      height: 36px;
+      font-size: 13px;
+      padding-inline: var(--space-3);
+      white-space: nowrap;
     }
   }
 </style>
