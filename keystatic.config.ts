@@ -1,8 +1,9 @@
 import { config, fields, collection } from '@keystatic/core';
 
-const hasGitHubCredentials =
-  typeof process !== 'undefined' &&
-  Boolean(process.env?.KEYSTATIC_GITHUB_CLIENT_ID && process.env?.KEYSTATIC_GITHUB_CLIENT_SECRET);
+// Decisão em TEMPO DE BUILD, inlined igualmente nos bundles do cliente e do
+// servidor. Não use `process.env` aqui: no browser ele não existe e a UI
+// ficaria em modo local enquanto o Worker roda em modo GitHub.
+const useGitHub = Boolean(import.meta.env.PUBLIC_KEYSTATIC_GITHUB_APP_SLUG);
 
 const postSchema = {
   title: fields.slug({ name: { label: 'Título' } }),
@@ -44,7 +45,7 @@ const postSchema = {
 };
 
 export default config({
-  storage: hasGitHubCredentials
+  storage: useGitHub
     ? { kind: 'github', repo: 'daviccarneiro/introducing.news' }
     : { kind: 'local' },
   ui: {
