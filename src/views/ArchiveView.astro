@@ -1,36 +1,50 @@
 ---
-import Base from '../../layouts/Base.astro';
-import Badge from '../../components/Badge.astro';
-import SubscribeForm from '../../components/SubscribeForm.astro';
-import { CATEGORY_LABELS, formatDate, getPosts, readingTime } from '../../lib/posts';
+import Base from '../layouts/Base.astro';
+import Badge from '../components/Badge.astro';
+import SubscribeForm from '../components/SubscribeForm.astro';
+import { paths, type Locale } from '../i18n/config';
+import { categoryLabel, useTranslations } from '../i18n/ui';
+import { formatDate, getPosts, readingTime, slugOf } from '../lib/posts';
 
-const posts = await getPosts();
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+const posts = await getPosts(locale);
 ---
 
 <Base
-  title="Arquivo — introducing.news"
-  description="Todas as edições sobre ferramentas, dados e ideias — publicadas desde janeiro de 2025."
+  title={t('meta.archive.title')}
+  description={t('meta.archive.description')}
+  alternate={paths.archive(locale === 'pt' ? 'en' : 'pt')}
 >
   <section class="head container">
-    <p class="eyebrow">Arquivo</p>
-    <h1>Todas as edições</h1>
-    <p class="head__sub">{posts.length} edições sobre ferramentas, dados e ideias — publicadas desde janeiro de 2025.</p>
+    <p class="eyebrow">{t('archive.eyebrow')}</p>
+    <h1>{t('archive.title')}</h1>
+    <p class="head__sub">{t('archive.sub', { count: posts.length })}</p>
   </section>
 
   <section class="list container">
     {
+      posts.length === 0 && <p class="meta">{t('archive.empty')}</p>
+    }
+    {
       posts.map((post) => (
-        <a class="row" href={`/ensaios/${post.id}/`}>
+        <a class="row" href={paths.post(locale, slugOf(post))}>
           <time class="meta row__date" datetime={post.data.publishedAt.toISOString()}>
-            {formatDate(post.data.publishedAt)}
+            {formatDate(post.data.publishedAt, locale)}
           </time>
           <div class="row__body">
             <div class="row__title-line">
               <h2>{post.data.title}</h2>
-              <Badge tone="accent">{CATEGORY_LABELS[post.data.category]}</Badge>
+              <Badge tone="accent">{categoryLabel(t, post.data.category)}</Badge>
             </div>
             <p class="row__excerpt">{post.data.description}</p>
-            <p class="meta">{readingTime(post)} min de leitura</p>
+            <p class="meta">
+              {readingTime(post)} {t('post.minRead')}
+            </p>
           </div>
           <span class="row__arrow" aria-hidden="true">↗</span>
         </a>
@@ -41,10 +55,10 @@ const posts = await getPosts();
   <section class="subscribe-band container">
     <div class="subscribe-band__inner">
       <div>
-        <h2>Não perca a próxima edição</h2>
-        <p class="meta">Um e-mail a cada dois dias. Grátis, sem spam. Cancele quando quiser.</p>
+        <h2>{t('archive.band.title')}</h2>
+        <p class="meta">{t('archive.band.body')}</p>
       </div>
-      <SubscribeForm id="assinar-arquivo" compact />
+      <SubscribeForm id={`assinar-archive-${locale}`} compact />
     </div>
   </section>
 </Base>

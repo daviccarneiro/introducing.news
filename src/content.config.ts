@@ -10,6 +10,8 @@ const posts = defineCollection({
     category: z.enum(['ia', 'ferramentas', 'dados', 'ensaio', 'carreira']).default('ensaio'),
     publishedAt: z.coerce.date(),
     cover: z.enum(['fig-01', 'fig-02', 'fig-03']).default('fig-01'),
+    /** Slug da edição equivalente no outro idioma (opcional). */
+    translation: z.string().optional(),
     draft: z.boolean().default(false),
   }),
 });

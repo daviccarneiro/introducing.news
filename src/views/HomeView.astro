@@ -4,17 +4,25 @@ import Badge from '../components/Badge.astro';
 import Cover from '../components/Cover.astro';
 import PostCard from '../components/PostCard.astro';
 import SubscribeForm from '../components/SubscribeForm.astro';
-import { CATEGORY_LABELS, formatDate, getPosts, readingTime } from '../lib/posts';
+import { paths, type Locale } from '../i18n/config';
+import { categoryLabel, useTranslations } from '../i18n/ui';
+import { formatDate, getPosts, readingTime, slugOf } from '../lib/posts';
 
-const posts = await getPosts();
+interface Props {
+  locale: Locale;
+}
+
+const { locale } = Astro.props;
+const t = useTranslations(locale);
+const posts = await getPosts(locale);
 const [featured, ...others] = posts;
 const recent = others.slice(0, 3);
 ---
 
 <Base>
   <section class="hero container">
-    <p class="eyebrow">Newsletter · Tecnologia &amp; ideias</p>
-    <h1>Notas curtas sobre tecnologia, sem o ruído do hype.</h1>
+    <p class="eyebrow">{t('home.eyebrow')}</p>
+    <h1>{t('home.title')}</h1>
     <svg class="doodle" width="240" height="17" viewBox="0 0 240 17" fill="none" aria-hidden="true">
       <path
         d="M4 10 C 38 3, 68 14, 100 8 S 160 3, 190 9 S 228 7, 236 5"
@@ -22,12 +30,9 @@ const recent = others.slice(0, 3);
         stroke-width="3"
         stroke-linecap="round"></path>
     </svg>
-    <p class="hero__sub">
-      Uma edição a cada dois dias: ferramentas, ideias e o que realmente vale a sua atenção — sem review
-      patrocinado, sem hype.
-    </p>
+    <p class="hero__sub">{t('home.sub')}</p>
     <SubscribeForm id="assinar" />
-    <p class="hero__micro meta">Grátis. Sem spam. Cancele quando quiser.</p>
+    <p class="hero__micro meta">{t('home.micro')}</p>
   </section>
 
   {
@@ -36,11 +41,11 @@ const recent = others.slice(0, 3);
         <div class="container">
           <div class="section-head">
             <div>
-              <p class="eyebrow">Última edição</p>
-              <h2>Recém-publicado</h2>
+              <p class="eyebrow">{t('home.latest.kicker')}</p>
+              <h2>{t('home.latest.title')}</h2>
             </div>
-            <a class="link-arrow" href="/ensaios/">
-              Ver todas as edições
+            <a class="link-arrow" href={paths.archive(locale)}>
+              {t('home.seeAll')}
               <span aria-hidden="true">↗</span>
             </a>
           </div>
@@ -48,26 +53,33 @@ const recent = others.slice(0, 3);
           <article class="featured__card">
             <div class="featured__body">
               <div class="featured__meta">
-                <Badge tone="accent">{CATEGORY_LABELS[featured.data.category]}</Badge>
-                <span class="meta">{formatDate(featured.data.publishedAt)}</span>
+                <Badge tone="accent">{categoryLabel(t, featured.data.category)}</Badge>
+                <span class="meta">{formatDate(featured.data.publishedAt, locale)}</span>
               </div>
-              <h3><a href={`/ensaios/${featured.id}/`}>{featured.data.title}</a></h3>
+              <h3>
+                <a href={paths.post(locale, slugOf(featured))}>{featured.data.title}</a>
+              </h3>
               <p class="featured__lead">{featured.data.description}</p>
               <div class="featured__author">
                 <span class="avatar" aria-hidden="true">DC</span>
                 <div>
                   <p class="featured__name">Davi Carneiro</p>
                   <p class="meta">
-                    {formatDate(featured.data.publishedAt)} · {readingTime(featured)} min de leitura
+                    {formatDate(featured.data.publishedAt, locale)} · {readingTime(featured)} {t('post.minRead')}
                   </p>
                 </div>
               </div>
-              <a class="link-arrow" href={`/ensaios/${featured.id}/`}>
-                Ler edição completa
+              <a class="link-arrow" href={paths.post(locale, slugOf(featured))}>
+                {t('home.latest.link')}
                 <span aria-hidden="true">↗</span>
               </a>
             </div>
-            <a class="featured__cover" href={`/ensaios/${featured.id}/`} tabindex="-1" aria-hidden="true">
+            <a
+              class="featured__cover"
+              href={paths.post(locale, slugOf(featured))}
+              tabindex="-1"
+              aria-hidden="true"
+            >
               <Cover variant={featured.data.cover} />
             </a>
           </article>
@@ -81,8 +93,8 @@ const recent = others.slice(0, 3);
       <section class="grid-section container">
         <div class="section-head">
           <div>
-            <p class="eyebrow">Edições anteriores</p>
-            <h2>Para ler no café</h2>
+            <p class="eyebrow">{t('home.recent.kicker')}</p>
+            <h2>{t('home.recent.title')}</h2>
           </div>
         </div>
         <div class="grid">
@@ -91,8 +103,8 @@ const recent = others.slice(0, 3);
           ))}
         </div>
         <div class="grid__more">
-          <a class="button button--secondary" href="/ensaios/">
-            Ver todas as edições
+          <a class="button button--secondary" href={paths.archive(locale)}>
+            {t('home.seeAll')}
             <span aria-hidden="true">↗</span>
           </a>
         </div>
@@ -100,12 +112,12 @@ const recent = others.slice(0, 3);
     )
   }
 
-  <section class="cta container" id="sobre">
+  <section class="cta container" id="about">
     <div class="cta__band">
       <div class="cta__content">
-        <p class="eyebrow cta__eyebrow">Vamos conversar</p>
-        <h2>Receba os bastidores antes de todo mundo.</h2>
-        <p>Publico notas, fontes e rascunhos no LinkedIn entre as edições.</p>
+        <p class="eyebrow cta__eyebrow">{t('home.cta.kicker')}</p>
+        <h2>{t('home.cta.title')}</h2>
+        <p>{t('home.cta.body')}</p>
         <div class="cta__actions">
           <a
             class="button button--accent"
@@ -113,10 +125,10 @@ const recent = others.slice(0, 3);
             target="_blank"
             rel="noopener"
           >
-            Seguir no LinkedIn
+            {t('home.cta.linkedin')}
             <span aria-hidden="true">↗</span>
           </a>
-          <a class="button button--ghost-inverse" href="/ensaios/">Ver ensaios</a>
+          <a class="button button--ghost-inverse" href={paths.archive(locale)}>{t('home.cta.essays')}</a>
         </div>
       </div>
       <svg class="cta__doodle" width="48" height="48" viewBox="0 0 24 24" fill="none" aria-hidden="true">

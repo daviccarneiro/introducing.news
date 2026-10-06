@@ -1,0 +1,37 @@
+---
+title: The end of naive prompting
+description: "Why the next competitive edge is not writing better prompts, but designing systems that fail well. A practical map in five layers."
+category: ia
+publishedAt: 2026-10-05
+cover: fig-01
+translation: modelos-de-linguagem-e-o-fim-do-prompt-ingenuo
+draft: false
+---
+
+For two years, the most valued skill was writing the right prompt. In 2026, that became a commodity: any reasonable model answers reasonable requests. The difference moved somewhere else — the design of the system around the model.
+
+## The prompt was only the beginning
+
+When the answer must be reliable, the prompt stops being the main artifact. What matters is the contract: validated inputs, verifiable outputs, retries with criteria and an explicit path for when everything fails. It is ordinary software engineering, applied to a probabilistic component.
+
+> Systems beat prompts. The right question is not what to ask, but what to build.
+
+## Five layers, one map
+
+1. **Contract:** define inputs and outputs before choosing the model.
+2. **Generation:** one call, one goal — no prompts that do everything.
+3. **Verification:** validate structure and facts before using the answer.
+4. **Fallback:** human in the loop when confidence drops below the threshold.
+5. **Observability:** log every attempt, cost and latency.
+
+```js
+const pipeline = await build({
+  retries: 3,
+  fallback: "human",
+  timeout: "30s"
+});
+```
+
+## What remains
+
+The competitive edge stops being the cleverness of the request and becomes the architecture of the operation. Whoever treats the model as a component — with contract, tests and a failure plan — ships more and suffers less. The rest is luck at high temperature.

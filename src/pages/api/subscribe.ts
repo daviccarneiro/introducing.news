@@ -2,6 +2,7 @@ export const prerender = false;
 
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
+import { DEFAULT_LOCALE, isLocale, type Locale } from '../../i18n/config';
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -11,9 +12,11 @@ const json = (body: unknown, status = 200) =>
 
 export const POST: APIRoute = async ({ request }) => {
   let email = '';
+  let locale: Locale = DEFAULT_LOCALE;
   try {
-    const data = (await request.json()) as { email?: unknown };
+    const data = (await request.json()) as { email?: unknown; locale?: unknown };
     email = typeof data?.email === 'string' ? data.email.trim().toLowerCase() : '';
+    if (typeof data?.locale === 'string' && isLocale(data.locale)) locale = data.locale;
   } catch {
     return json({ error: 'Requisição inválida.' }, 400);
   }
@@ -23,23 +26,48 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const apiKey = env.RESEND_API_KEY;
-  const audienceId = env.RESEND_AUDIENCE_ID;
-  if (!apiKey || !audienceId) {
-    console.error('subscribe: RESEND_API_KEY ou RESEND_AUDIENCE_ID ausente');
+  const segmentId = locale === 'pt' ? env.RESEND_SEGMENT_PT : env.RESEND_SEGMENT_EN;
+  if (!apiKey || !segmentId) {
+    console.error('subscribe: RESEND_API_KEY ou segmento do Resend ausente');
     return json({ error: 'Serviço de inscrição não configurado.' }, 500);
   }
 
-  const response = await fetch(`https://api.resend.com/audiences/${audienceId}/contacts`, {
+  const headers = {
+    Authorization: `Bearer ${apiKey}`,
+    'Content-Type': 'application/json',
+  };
+
+  const payload = {
+    email,
+    unsubscribed: false,
+    properties: { locale },
+    segments: [{ id: segmentId }],
+  };
+
+  let response = await fetch('https://api.resend.com/contacts', {
     method: 'POST',
-    headers: {
-      Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ email, unsubscribed: false }),
+    headers,
+    body: JSON.stringify(payload),
   });
 
-  // 409: contato já existe — tratamos como sucesso idempotente.
-  if (!response.ok && response.status !== 409) {
+  // Contato já existe: atualiza idioma/segmento em vez de falhar.
+  if (response.status === 409) {
+    const found = await fetch(`https://api.resend.com/contacts/${encodeURIComponent(email)}`, {
+      headers,
+    });
+    if (found.ok) {
+      const contact = (await found.json()) as { id?: string };
+      if (contact.id) {
+        response = await fetch(`https://api.resend.com/contacts/${contact.id}`, {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify(payload),
+        });
+      }
+    }
+  }
+
+  if (!response.ok) {
     console.error('subscribe: falha no Resend', response.status, await response.text());
     return json({ error: 'Não foi possível concluir a inscrição. Tente de novo.' }, 502);
   }

@@ -1,0 +1,16 @@
+---
+import PostView from '../../../views/PostView.astro';
+import { getPosts, slugOf } from '../../../lib/posts';
+
+export async function getStaticPaths() {
+  const posts = await getPosts('pt');
+  return posts.map((post) => ({
+    params: { slug: slugOf(post) },
+    props: { post },
+  }));
+}
+
+const { post } = Astro.props;
+---
+
+<PostView post={post} locale="pt" />

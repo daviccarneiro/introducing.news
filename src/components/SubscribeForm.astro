@@ -1,24 +1,52 @@
 ---
+import { useTranslations } from '../i18n/ui';
+import { getLocale } from '../i18n/utils';
+
 interface Props {
   id?: string;
   compact?: boolean;
 }
+
 const { id = 'assinar', compact = false } = Astro.props;
+const locale = getLocale(Astro.url);
+const t = useTranslations(locale);
 const inputId = `email-${id}-${compact ? 'c' : 'f'}`;
 ---
 
-<form class:list={['subscribe', { 'subscribe--compact': compact }]} id={id} data-subscribe novalidate>
-  <label class="visually-hidden" for={inputId}>Seu e-mail</label>
+<form
+  class:list={['subscribe', { 'subscribe--compact': compact }]}
+  id={id}
+  data-subscribe
+  data-msg-sending={t('form.sending')}
+  data-msg-success={t('form.success')}
+  data-msg-error={t('form.error')}
+  data-msg-invalid={t('form.invalid')}
+  data-msg-network={t('form.network')}
+  novalidate
+>
+  <fieldset class="subscribe__lang">
+    <legend class="visually-hidden">{t('form.lang.legend')}</legend>
+    <label class="lang-pill">
+      <input type="radio" name="locale" value="pt" checked={locale === 'pt'} />
+      <span>Português</span>
+    </label>
+    <label class="lang-pill">
+      <input type="radio" name="locale" value="en" checked={locale === 'en'} />
+      <span>English</span>
+    </label>
+  </fieldset>
+
   <div class="subscribe__row">
+    <label class="visually-hidden" for={inputId}>{t('form.lang.legend')}</label>
     <input
       type="email"
       name="email"
       id={inputId}
-      placeholder="seu@email.com"
+      placeholder={t('form.placeholder')}
       autocomplete="email"
       required
     />
-    <button type="submit">Assinar</button>
+    <button type="submit">{t('form.button')}</button>
   </div>
   <p class="subscribe__status meta" role="status" aria-live="polite" hidden></p>
 </form>
@@ -27,7 +55,41 @@ const inputId = `email-${id}-${compact ? 'c' : 'f'}`;
   .subscribe {
     display: flex;
     flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .subscribe__lang {
+    display: flex;
     gap: var(--space-2);
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+
+  .lang-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: 5px 10px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-full);
+    font: 500 11px/1.2 var(--font-mono);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+    cursor: pointer;
+    background: var(--card);
+  }
+
+  .lang-pill input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .lang-pill:has(input:checked) {
+    border-color: var(--foreground);
+    color: var(--foreground);
   }
 
   .subscribe__row {
@@ -36,7 +98,7 @@ const inputId = `email-${id}-${compact ? 'c' : 'f'}`;
     flex-wrap: wrap;
   }
 
-  input {
+  input[type='email'] {
     flex: 1 1 220px;
     min-width: 0;
     height: 48px;
@@ -48,11 +110,11 @@ const inputId = `email-${id}-${compact ? 'c' : 'f'}`;
     font: 400 15px/1 var(--font-sans);
   }
 
-  input::placeholder {
+  input[type='email']::placeholder {
     color: var(--muted-foreground);
   }
 
-  input:focus {
+  input[type='email']:focus {
     outline: none;
     border-color: var(--ring);
   }
@@ -87,7 +149,7 @@ const inputId = `email-${id}-${compact ? 'c' : 'f'}`;
 
   .subscribe--compact {
     width: 100%;
-    max-width: 420px;
+    max-width: 460px;
   }
 </style>
 
@@ -98,12 +160,27 @@ const inputId = `email-${id}-${compact ? 'c' : 'f'}`;
       if (!(form instanceof HTMLFormElement)) return;
       const status = form.querySelector('.subscribe__status');
       const button = form.querySelector('button');
-      const input = form.querySelector('input');
-      if (!(status instanceof HTMLElement) || !(button instanceof HTMLButtonElement) || !(input instanceof HTMLInputElement)) return;
+      const input = form.querySelector('input[type="email"]');
+      const lang = form.querySelector('input[name="locale"]:checked');
+      if (
+        !(status instanceof HTMLElement) ||
+        !(button instanceof HTMLButtonElement) ||
+        !(input instanceof HTMLInputElement)
+      ) {
+        return;
+      }
+
+      const messages = {
+        sending: form.dataset.msgSending ?? '…',
+        success: form.dataset.msgSuccess ?? 'OK',
+        error: form.dataset.msgError ?? 'Error',
+        invalid: form.dataset.msgInvalid ?? 'Invalid',
+        network: form.dataset.msgNetwork ?? 'Network',
+      };
 
       const email = input.value.trim();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-        status.textContent = 'Digite um e-mail válido.';
+        status.textContent = messages.invalid;
         status.dataset.state = 'error';
         status.hidden = false;
         return;
@@ -111,26 +188,28 @@ const inputId = `email-${id}-${compact ? 'c' : 'f'}`;
 
       button.disabled = true;
       const original = button.textContent;
-      button.textContent = 'Enviando…';
+      button.textContent = messages.sending;
       status.hidden = true;
 
       try {
         const response = await fetch('/api/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
+          body: JSON.stringify({
+            email,
+            locale: lang instanceof HTMLInputElement ? lang.value : 'pt',
+          }),
         });
-        const data = (await response.json().catch(() => ({}))) as { error?: string };
         if (response.ok) {
           form.reset();
-          status.textContent = 'Inscrição confirmada. Até a próxima edição!';
+          status.textContent = messages.success;
           status.dataset.state = 'ok';
         } else {
-          status.textContent = data?.error ?? 'Não foi possível concluir. Tente de novo.';
+          status.textContent = messages.error;
           status.dataset.state = 'error';
         }
       } catch {
-        status.textContent = 'Falha de rede. Tente de novo.';
+        status.textContent = messages.network;
         status.dataset.state = 'error';
       } finally {
         status.hidden = false;

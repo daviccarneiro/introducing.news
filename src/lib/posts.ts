@@ -1,18 +1,31 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
+import type { Locale } from '../i18n/config';
 
 export type Post = CollectionEntry<'posts'>;
 
-export const CATEGORY_LABELS: Record<Post['data']['category'], string> = {
-  ia: 'IA',
-  ferramentas: 'Ferramentas',
-  dados: 'Dados',
-  ensaio: 'Ensaio',
-  carreira: 'Carreira',
-};
+/** Slug sem o prefixo de idioma (`pt/` ou `en/`). */
+export function slugOf(post: Post): string {
+  return post.id.replace(/^(pt|en)\//, '');
+}
 
-export async function getPosts({ includeDrafts = false } = {}): Promise<Post[]> {
-  const posts = await getCollection('posts', ({ data }) => includeDrafts || !data.draft);
+export async function getPosts(locale: Locale, { includeDrafts = false } = {}): Promise<Post[]> {
+  const prefix = `${locale}/`;
+  const posts = await getCollection(
+    'posts',
+    ({ id, data }) => id.startsWith(prefix) && (includeDrafts || !data.draft),
+  );
   return posts.sort((a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf());
+}
+
+/** Edição equivalente no outro idioma, quando houver (`translation` no frontmatter). */
+export async function getTranslation(post: Post, locale: Locale): Promise<Post | null> {
+  const slug = post.data.translation;
+  if (!slug) return null;
+  const other: Locale = locale === 'pt' ? 'en' : 'pt';
+  const all = await getCollection('posts');
+  return (
+    all.find((entry) => entry.id === `${other}/${slug}` && !entry.data.draft) ?? null
+  );
 }
 
 export function readingTime(post: Post): number {
@@ -20,8 +33,8 @@ export function readingTime(post: Post): number {
   return Math.max(1, Math.round(words / 200));
 }
 
-export function formatDate(date: Date): string {
-  return new Intl.DateTimeFormat('pt-BR', {
+export function formatDate(date: Date, locale: Locale): string {
+  return new Intl.DateTimeFormat(locale === 'pt' ? 'pt-BR' : 'en-US', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',

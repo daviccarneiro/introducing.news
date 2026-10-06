@@ -1,7 +1,10 @@
 ---
 import Badge from './Badge.astro';
 import Cover from './Cover.astro';
-import { CATEGORY_LABELS, formatDate, readingTime, type Post } from '../lib/posts';
+import { paths } from '../i18n/config';
+import { categoryLabel, useTranslations } from '../i18n/ui';
+import { getLocale } from '../i18n/utils';
+import { formatDate, readingTime, slugOf, type Post } from '../lib/posts';
 
 interface Props {
   post: Post;
@@ -9,7 +12,9 @@ interface Props {
 }
 
 const { post, cover = post.data.cover } = Astro.props;
-const href = `/ensaios/${post.id}/`;
+const locale = getLocale(Astro.url);
+const t = useTranslations(locale);
+const href = paths.post(locale, slugOf(post));
 ---
 
 <article class="card">
@@ -18,14 +23,14 @@ const href = `/ensaios/${post.id}/`;
   </a>
   <div class="card__body">
     <div class="card__meta">
-      <Badge tone="accent">{CATEGORY_LABELS[post.data.category]}</Badge>
+      <Badge tone="accent">{categoryLabel(t, post.data.category)}</Badge>
       <time class="meta" datetime={post.data.publishedAt.toISOString()}>
-        {formatDate(post.data.publishedAt)}
+        {formatDate(post.data.publishedAt, locale)}
       </time>
     </div>
     <h3 class="card__title"><a href={href}>{post.data.title}</a></h3>
     <p class="card__excerpt">{post.data.description}</p>
-    <p class="card__foot meta">{readingTime(post)} min de leitura</p>
+    <p class="card__foot meta">{readingTime(post)} {t('post.minRead')}</p>
   </div>
 </article>
 

@@ -2,37 +2,54 @@
 import '../styles/global.css';
 import SiteHeader from '../components/SiteHeader.astro';
 import SiteFooter from '../components/SiteFooter.astro';
+import { HTML_LANG, OG_LOCALE, type Locale } from '../i18n/config';
+import { useTranslations } from '../i18n/ui';
+import { getLocale, otherLocalePath } from '../i18n/utils';
 
 interface Props {
   title?: string;
   description?: string;
+  /** Caminho equivalente no outro idioma (quando as rotas não são simétricas). */
+  alternate?: string;
+  type?: 'website' | 'article';
 }
 
-const {
-  title = 'introducing.news — Notas curtas sobre tecnologia',
-  description = 'Newsletter sobre tecnologia, sem o ruído do hype. Ferramentas, dados e ideias, uma edição a cada dois dias.',
-} = Astro.props;
-
+const { title, description, alternate, type = 'website' } = Astro.props;
+const locale = getLocale(Astro.url);
+const t = useTranslations(locale);
 const site = Astro.site ?? new URL('https://introducing.news');
 const canonical = new URL(Astro.url.pathname, site);
+const other: Locale = locale === 'pt' ? 'en' : 'pt';
+const alternateUrl = new URL(otherLocalePath(Astro.url, alternate), site);
+
+const pageTitle = title ?? t('meta.home.title');
+const pageDescription = description ?? t('meta.home.description');
+const ptUrl = locale === 'pt' ? canonical.href : alternateUrl.href;
+const enUrl = locale === 'en' ? canonical.href : alternateUrl.href;
 ---
 
 <!doctype html>
-<html lang="pt-BR">
+<html lang={HTML_LANG[locale]}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>{title}</title>
-    <meta name="description" content={description} />
+    <title>{pageTitle}</title>
+    <meta name="description" content={pageDescription} />
     <link rel="canonical" href={canonical.href} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
-    <link rel="alternate" type="application/rss+xml" title="introducing.news" href="/rss.xml" />
+    <link rel="alternate" type="application/rss+xml" title="introducing.news" href={`/${locale}/rss.xml`} />
 
-    <meta property="og:type" content="website" />
+    <link rel="alternate" hreflang="pt-BR" href={ptUrl} />
+    <link rel="alternate" hreflang="en" href={enUrl} />
+    <link rel="alternate" hreflang="x-default" href={`${site.origin}/`} />
+
+    <meta property="og:type" content={type} />
     <meta property="og:site_name" content="introducing.news" />
-    <meta property="og:title" content={title} />
-    <meta property="og:description" content={description} />
+    <meta property="og:title" content={pageTitle} />
+    <meta property="og:description" content={pageDescription} />
     <meta property="og:url" content={canonical.href} />
+    <meta property="og:locale" content={OG_LOCALE[locale]} />
+    <meta property="og:locale:alternate" content={OG_LOCALE[other]} />
     <meta name="twitter:card" content="summary_large_image" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -43,7 +60,7 @@ const canonical = new URL(Astro.url.pathname, site);
     />
   </head>
   <body>
-    <SiteHeader />
+    <SiteHeader alternate={alternate} />
     <main>
       <slot />
     </main>
