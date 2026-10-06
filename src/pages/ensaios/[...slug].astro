@@ -1,0 +1,274 @@
+---
+import { render } from 'astro:content';
+import Base from '../../layouts/Base.astro';
+import Badge from '../../components/Badge.astro';
+import Cover from '../../components/Cover.astro';
+import PostCard from '../../components/PostCard.astro';
+import SubscribeForm from '../../components/SubscribeForm.astro';
+import { CATEGORY_LABELS, formatDate, getPosts, readingTime } from '../../lib/posts';
+
+export async function getStaticPaths() {
+  const posts = await getPosts();
+  return posts.map((post) => ({ params: { slug: post.id }, props: { post } }));
+}
+
+const { post } = Astro.props;
+const { Content } = await render(post);
+const posts = (await getPosts()).filter((entry) => entry.id !== post.id);
+const related = posts.slice(0, 2);
+const linkedinShare = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(new URL(`/ensaios/${post.id}/`, Astro.site ?? Astro.url).href)}`;
+---
+
+<Base title={`${post.data.title} — introducing.news`} description={post.data.description}>
+  <article>
+    <header class="post-head container">
+      <a class="post-head__back meta" href="/ensaios/">← Voltar ao arquivo</a>
+      <div class="post-head__meta">
+        <Badge tone="accent">{CATEGORY_LABELS[post.data.category]}</Badge>
+        <span class="meta">{formatDate(post.data.publishedAt)}</span>
+      </div>
+      <h1>{post.data.title}</h1>
+      <p class="post-head__lead">{post.data.description}</p>
+      <div class="post-head__author">
+        <span class="avatar" aria-hidden="true">DC</span>
+        <div>
+          <p class="post-head__name">Davi Carneiro</p>
+          <p class="meta">{readingTime(post)} min de leitura</p>
+        </div>
+      </div>
+    </header>
+
+    <div class="post-cover container">
+      <Cover variant={post.data.cover} class="post-cover__art" />
+    </div>
+
+    <div class="post-body container">
+      <div class="prose">
+        <Content />
+      </div>
+
+      <div class="post-share">
+        <p>Gostou? Compartilhe esta edição.</p>
+        <div class="post-share__actions">
+          <button class="button button--secondary" type="button" data-copy-link>
+            Copiar link
+            <span aria-hidden="true">↗</span>
+          </button>
+          <a class="button button--primary" href={linkedinShare} target="_blank" rel="noopener">
+            Compartilhar
+            <span aria-hidden="true">in</span>
+          </a>
+        </div>
+      </div>
+
+      <div class="post-subscribe">
+        <div>
+          <h2>Receba a próxima edição</h2>
+          <p class="meta">Um e-mail a cada dois dias. Grátis, sem spam.</p>
+        </div>
+        <SubscribeForm id="assinar-post" compact />
+      </div>
+    </div>
+  </article>
+
+  {
+    related.length > 0 && (
+      <section class="continue container">
+        <h2>Continue lendo</h2>
+        <div class="continue__grid">
+          {related.map((entry) => (
+            <PostCard post={entry} />
+          ))}
+        </div>
+      </section>
+    )
+  }
+</Base>
+
+<script>
+  const button = document.querySelector('[data-copy-link]');
+  button?.addEventListener('click', async () => {
+    if (!(button instanceof HTMLButtonElement)) return;
+    const original = button.firstChild?.textContent ?? 'Copiar link';
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      button.firstChild!.textContent = 'Link copiado ';
+    } catch {
+      /* clipboard indisponível */
+    }
+    window.setTimeout(() => {
+      button.firstChild!.textContent = original;
+    }, 2000);
+  });
+</script>
+
+<style>
+  .post-head {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-5);
+    text-align: center;
+    padding-block: var(--space-16) var(--space-12);
+  }
+
+  .post-head__back {
+    align-self: flex-start;
+    text-decoration: none;
+    text-transform: uppercase;
+  }
+
+  .post-head__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .post-head h1 {
+    font: 600 clamp(30px, 4vw, 40px) / 1.12 var(--font-sans);
+    letter-spacing: -0.02em;
+    max-width: 720px;
+  }
+
+  .post-head__lead {
+    font: 400 21px/1.65 var(--font-serif);
+    color: var(--muted-foreground);
+    max-width: 640px;
+  }
+
+  .post-head__author {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    text-align: left;
+  }
+
+  .post-head__name {
+    font: 500 17px/1.4 var(--font-sans);
+  }
+
+  .avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+    background: var(--accent-soft);
+    color: var(--accent-soft-foreground);
+    font: 500 11px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+  }
+
+  .post-cover {
+    margin-bottom: var(--space-16);
+  }
+
+  .post-cover__art {
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+  }
+
+  .post-body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-12);
+  }
+
+  .post-body .prose {
+    width: 100%;
+    max-width: var(--reading);
+  }
+
+  .post-share {
+    width: 100%;
+    max-width: var(--reading);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    border-top: 1px solid var(--border);
+    padding-top: var(--space-8);
+  }
+
+  .post-share p {
+    font: 500 17px/1.4 var(--font-sans);
+  }
+
+  .post-share__actions {
+    display: flex;
+    gap: var(--space-3);
+  }
+
+  .post-subscribe {
+    width: 100%;
+    max-width: var(--reading);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    background: var(--muted);
+    border-radius: var(--radius-lg);
+    padding: var(--space-8);
+  }
+
+  .post-subscribe h2 {
+    font: 600 20px/1.35 var(--font-sans);
+    letter-spacing: -0.01em;
+    margin-bottom: var(--space-1);
+  }
+
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    height: 40px;
+    padding-inline: var(--space-4);
+    border-radius: var(--radius-md);
+    font: 500 14px/1 var(--font-sans);
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .button--primary {
+    background: var(--primary);
+    color: var(--primary-foreground);
+    border: 0;
+  }
+
+  .button--secondary {
+    background: var(--card);
+    color: var(--foreground);
+    border: 1px solid var(--border);
+  }
+
+  .continue {
+    padding-block: var(--space-16) var(--space-20);
+  }
+
+  .continue h2 {
+    font: 600 26px/1.25 var(--font-sans);
+    letter-spacing: -0.015em;
+    margin-bottom: var(--space-6);
+  }
+
+  .continue__grid {
+    display: grid;
+    gap: var(--space-6);
+    grid-template-columns: 1fr;
+  }
+
+  @media (min-width: 768px) {
+    .post-subscribe {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .continue__grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+  }
+</style>

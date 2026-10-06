@@ -1,0 +1,363 @@
+---
+import Base from '../layouts/Base.astro';
+import Badge from '../components/Badge.astro';
+import Cover from '../components/Cover.astro';
+import PostCard from '../components/PostCard.astro';
+import SubscribeForm from '../components/SubscribeForm.astro';
+import { CATEGORY_LABELS, formatDate, getPosts, readingTime } from '../lib/posts';
+
+const posts = await getPosts();
+const [featured, ...others] = posts;
+const recent = others.slice(0, 3);
+---
+
+<Base>
+  <section class="hero container">
+    <p class="eyebrow">Newsletter · Tecnologia &amp; ideias</p>
+    <h1>Notas curtas sobre tecnologia, sem o ruído do hype.</h1>
+    <svg class="doodle" width="240" height="17" viewBox="0 0 240 17" fill="none" aria-hidden="true">
+      <path
+        d="M4 10 C 38 3, 68 14, 100 8 S 160 3, 190 9 S 228 7, 236 5"
+        stroke="#F6821F"
+        stroke-width="3"
+        stroke-linecap="round"></path>
+    </svg>
+    <p class="hero__sub">
+      Uma edição a cada dois dias: ferramentas, ideias e o que realmente vale a sua atenção — sem review
+      patrocinado, sem hype.
+    </p>
+    <SubscribeForm id="assinar" />
+    <p class="hero__micro meta">Grátis. Sem spam. Cancele quando quiser.</p>
+  </section>
+
+  {
+    featured && (
+      <section class="featured">
+        <div class="container">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Última edição</p>
+              <h2>Recém-publicado</h2>
+            </div>
+            <a class="link-arrow" href="/ensaios/">
+              Ver todas as edições
+              <span aria-hidden="true">↗</span>
+            </a>
+          </div>
+
+          <article class="featured__card">
+            <div class="featured__body">
+              <div class="featured__meta">
+                <Badge tone="accent">{CATEGORY_LABELS[featured.data.category]}</Badge>
+                <span class="meta">{formatDate(featured.data.publishedAt)}</span>
+              </div>
+              <h3><a href={`/ensaios/${featured.id}/`}>{featured.data.title}</a></h3>
+              <p class="featured__lead">{featured.data.description}</p>
+              <div class="featured__author">
+                <span class="avatar" aria-hidden="true">DC</span>
+                <div>
+                  <p class="featured__name">Davi Carneiro</p>
+                  <p class="meta">
+                    {formatDate(featured.data.publishedAt)} · {readingTime(featured)} min de leitura
+                  </p>
+                </div>
+              </div>
+              <a class="link-arrow" href={`/ensaios/${featured.id}/`}>
+                Ler edição completa
+                <span aria-hidden="true">↗</span>
+              </a>
+            </div>
+            <a class="featured__cover" href={`/ensaios/${featured.id}/`} tabindex="-1" aria-hidden="true">
+              <Cover variant={featured.data.cover} />
+            </a>
+          </article>
+        </div>
+      </section>
+    )
+  }
+
+  {
+    recent.length > 0 && (
+      <section class="grid-section container">
+        <div class="section-head">
+          <div>
+            <p class="eyebrow">Edições anteriores</p>
+            <h2>Para ler no café</h2>
+          </div>
+        </div>
+        <div class="grid">
+          {recent.map((post) => (
+            <PostCard post={post} />
+          ))}
+        </div>
+        <div class="grid__more">
+          <a class="button button--secondary" href="/ensaios/">
+            Ver todas as edições
+            <span aria-hidden="true">↗</span>
+          </a>
+        </div>
+      </section>
+    )
+  }
+
+  <section class="cta container" id="sobre">
+    <div class="cta__band">
+      <div class="cta__content">
+        <p class="eyebrow cta__eyebrow">Vamos conversar</p>
+        <h2>Receba os bastidores antes de todo mundo.</h2>
+        <p>Publico notas, fontes e rascunhos no LinkedIn entre as edições.</p>
+        <div class="cta__actions">
+          <a
+            class="button button--accent"
+            href="https://www.linkedin.com/in/daviccarneiro/"
+            target="_blank"
+            rel="noopener"
+          >
+            Seguir no LinkedIn
+            <span aria-hidden="true">↗</span>
+          </a>
+          <a class="button button--ghost-inverse" href="/ensaios/">Ver ensaios</a>
+        </div>
+      </div>
+      <svg class="cta__doodle" width="48" height="48" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+        <path
+          d="M12 2 C 13.2 8.4 15.6 10.8 22 12 C 15.6 13.2 13.2 15.6 12 22 C 10.8 15.6 8.4 13.2 2 12 C 8.4 10.8 10.8 8.4 12 2 Z"
+          stroke="#F6821F"
+          stroke-width="2"
+          stroke-linejoin="round"></path>
+      </svg>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .hero {
+    padding-block: var(--space-24) var(--space-20);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-6);
+  }
+
+  .hero h1 {
+    font: 700 clamp(40px, 6vw, 72px) / 1.02 var(--font-sans);
+    letter-spacing: -0.03em;
+    max-width: 900px;
+  }
+
+  .doodle {
+    margin-top: calc(-1 * var(--space-4));
+    margin-left: 150px;
+  }
+
+  .hero__sub {
+    font: 400 16px/1.6 var(--font-sans);
+    color: var(--muted-foreground);
+    max-width: 640px;
+  }
+
+  .hero__micro {
+    margin: 0;
+  }
+
+  .section-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-6);
+    margin-bottom: var(--space-6);
+  }
+
+  .section-head h2 {
+    font: 600 26px/1.25 var(--font-sans);
+    letter-spacing: -0.015em;
+    margin-top: var(--space-2);
+  }
+
+  .link-arrow {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font: 500 14px/1 var(--font-sans);
+    color: var(--link);
+    text-decoration: none;
+  }
+
+  .featured {
+    background: var(--muted);
+    padding-block: var(--space-16) var(--space-20);
+  }
+
+  .featured__card {
+    display: grid;
+    gap: 0;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+  }
+
+  .featured__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    padding: var(--space-10);
+  }
+
+  .featured__meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .featured__card h3 {
+    font: 600 clamp(28px, 3.4vw, 40px) / 1.12 var(--font-sans);
+    letter-spacing: -0.02em;
+  }
+
+  .featured__card h3 a {
+    text-decoration: none;
+  }
+
+  .featured__lead {
+    font: 400 21px/1.65 var(--font-serif);
+    color: var(--muted-foreground);
+    max-width: 560px;
+  }
+
+  .featured__author {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
+  .featured__name {
+    font: 500 17px/1.4 var(--font-sans);
+  }
+
+  .avatar {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-full);
+    background: var(--accent-soft);
+    color: var(--accent-soft-foreground);
+    font: 500 11px/1 var(--font-mono);
+    letter-spacing: 0.06em;
+  }
+
+  .grid-section {
+    padding-block: var(--space-20) var(--space-12);
+  }
+
+  .grid {
+    display: grid;
+    gap: var(--space-6);
+    grid-template-columns: 1fr;
+  }
+
+  .grid__more {
+    display: flex;
+    justify-content: center;
+    margin-top: var(--space-8);
+  }
+
+  .cta {
+    padding-block: var(--space-12) var(--space-20);
+  }
+
+  .cta__band {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-12);
+    background: var(--primary);
+    color: var(--primary-foreground);
+    border-radius: var(--radius-xl);
+    padding: var(--space-16);
+  }
+
+  .cta__eyebrow {
+    color: var(--accent);
+  }
+
+  .cta__content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    max-width: 560px;
+  }
+
+  .cta__content h2 {
+    font: 600 26px/1.25 var(--font-sans);
+    letter-spacing: -0.015em;
+  }
+
+  .cta__content p {
+    color: var(--ink-400);
+  }
+
+  .cta__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-4);
+    margin-top: var(--space-2);
+  }
+
+  .button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    height: 48px;
+    padding-inline: var(--space-5);
+    border-radius: var(--radius-md);
+    font: 500 15px/1 var(--font-sans);
+    text-decoration: none;
+  }
+
+  .button--secondary {
+    height: 40px;
+    font-size: 14px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--foreground);
+  }
+
+  .button--accent {
+    background: var(--accent);
+    color: var(--accent-foreground);
+  }
+
+  .button--ghost-inverse {
+    color: var(--primary-foreground);
+  }
+
+  @media (min-width: 900px) {
+    .grid {
+      grid-template-columns: repeat(3, 1fr);
+    }
+
+    .featured__card {
+      grid-template-columns: 1.1fr 1fr;
+    }
+
+    .featured__cover {
+      order: 2;
+      align-self: stretch;
+    }
+
+    .featured__cover :global(.cover) {
+      height: 100%;
+      object-fit: cover;
+    }
+  }
+
+  @media (max-width: 640px) {
+    .doodle {
+      margin-left: 0;
+    }
+  }
+</style>

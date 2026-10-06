@@ -1,0 +1,33 @@
+{
+  "name": "introducing-news",
+  "type": "module",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "types": "wrangler types",
+    "deploy": "npm run build && wrangler deploy",
+    "newsletter": "node scripts/send-newsletter.mjs"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^14.3.4",
+    "@astrojs/mdx": "^8.0.3",
+    "@astrojs/react": "^7.0.1",
+    "@keystatic/astro": "^6.0.0",
+    "@keystatic/core": "^0.6.9",
+    "astro": "^7.3.6",
+    "react": "^19.3.0",
+    "react-dom": "^19.3.0",
+    "resend": "^6.32.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@types/node": "^26.6.4",
+    "gray-matter": "^4.0.3",
+    "typescript": "^5.9.3",
+    "wrangler": "^4.147.0"
+  }
+}

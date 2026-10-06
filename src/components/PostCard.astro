@@ -1,0 +1,88 @@
+---
+import Badge from './Badge.astro';
+import Cover from './Cover.astro';
+import { CATEGORY_LABELS, formatDate, readingTime, type Post } from '../lib/posts';
+
+interface Props {
+  post: Post;
+  cover?: Post['data']['cover'];
+}
+
+const { post, cover = post.data.cover } = Astro.props;
+const href = `/ensaios/${post.id}/`;
+---
+
+<article class="card">
+  <a class="card__cover" href={href} tabindex="-1" aria-hidden="true">
+    <Cover variant={cover} />
+  </a>
+  <div class="card__body">
+    <div class="card__meta">
+      <Badge tone="accent">{CATEGORY_LABELS[post.data.category]}</Badge>
+      <time class="meta" datetime={post.data.publishedAt.toISOString()}>
+        {formatDate(post.data.publishedAt)}
+      </time>
+    </div>
+    <h3 class="card__title"><a href={href}>{post.data.title}</a></h3>
+    <p class="card__excerpt">{post.data.description}</p>
+    <p class="card__foot meta">{readingTime(post)} min de leitura</p>
+  </div>
+</article>
+
+<style>
+  .card {
+    display: flex;
+    flex-direction: column;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  }
+
+  .card:hover {
+    border-color: var(--border-strong);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .card__cover {
+    display: block;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .card__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding: var(--space-5);
+  }
+
+  .card__meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+  }
+
+  .card__title {
+    font: 600 20px/1.35 var(--font-sans);
+    letter-spacing: -0.01em;
+  }
+
+  .card__title a {
+    text-decoration: none;
+  }
+
+  .card__title a:hover {
+    color: var(--accent-soft-foreground);
+  }
+
+  .card__excerpt {
+    font: 400 14px/1.5 var(--font-sans);
+    color: var(--muted-foreground);
+  }
+
+  .card__foot {
+    margin-top: auto;
+  }
+</style>

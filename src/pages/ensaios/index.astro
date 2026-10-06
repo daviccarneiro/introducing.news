@@ -1,0 +1,160 @@
+---
+import Base from '../../layouts/Base.astro';
+import Badge from '../../components/Badge.astro';
+import SubscribeForm from '../../components/SubscribeForm.astro';
+import { CATEGORY_LABELS, formatDate, getPosts, readingTime } from '../../lib/posts';
+
+const posts = await getPosts();
+---
+
+<Base
+  title="Arquivo — introducing.news"
+  description="Todas as edições sobre ferramentas, dados e ideias — publicadas desde janeiro de 2025."
+>
+  <section class="head container">
+    <p class="eyebrow">Arquivo</p>
+    <h1>Todas as edições</h1>
+    <p class="head__sub">{posts.length} edições sobre ferramentas, dados e ideias — publicadas desde janeiro de 2025.</p>
+  </section>
+
+  <section class="list container">
+    {
+      posts.map((post) => (
+        <a class="row" href={`/ensaios/${post.id}/`}>
+          <time class="meta row__date" datetime={post.data.publishedAt.toISOString()}>
+            {formatDate(post.data.publishedAt)}
+          </time>
+          <div class="row__body">
+            <div class="row__title-line">
+              <h2>{post.data.title}</h2>
+              <Badge tone="accent">{CATEGORY_LABELS[post.data.category]}</Badge>
+            </div>
+            <p class="row__excerpt">{post.data.description}</p>
+            <p class="meta">{readingTime(post)} min de leitura</p>
+          </div>
+          <span class="row__arrow" aria-hidden="true">↗</span>
+        </a>
+      ))
+    }
+  </section>
+
+  <section class="subscribe-band container">
+    <div class="subscribe-band__inner">
+      <div>
+        <h2>Não perca a próxima edição</h2>
+        <p class="meta">Um e-mail a cada dois dias. Grátis, sem spam. Cancele quando quiser.</p>
+      </div>
+      <SubscribeForm id="assinar-arquivo" compact />
+    </div>
+  </section>
+</Base>
+
+<style>
+  .head {
+    padding-block: var(--space-24) var(--space-10);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+  }
+
+  .head h1 {
+    font: 600 clamp(34px, 4.5vw, 48px) / 1.1 var(--font-sans);
+    letter-spacing: -0.025em;
+  }
+
+  .head__sub {
+    color: var(--muted-foreground);
+    max-width: 640px;
+  }
+
+  .list {
+    display: flex;
+    flex-direction: column;
+    padding-bottom: var(--space-12);
+  }
+
+  .row {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-2);
+    padding-block: var(--space-6);
+    border-top: 1px solid var(--border);
+    text-decoration: none;
+    transition: background 0.15s ease;
+  }
+
+  .row:last-child {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .row:hover {
+    background: var(--muted);
+  }
+
+  .row__body {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .row__title-line {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+  }
+
+  .row h2 {
+    font: 600 20px/1.35 var(--font-sans);
+    letter-spacing: -0.01em;
+  }
+
+  .row__excerpt {
+    font: 400 14px/1.5 var(--font-sans);
+    color: var(--muted-foreground);
+    max-width: 720px;
+  }
+
+  .row__arrow {
+    display: none;
+    color: var(--muted-foreground);
+  }
+
+  .subscribe-band {
+    padding-block: var(--space-6) var(--space-20);
+  }
+
+  .subscribe-band__inner {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    align-items: flex-start;
+    justify-content: space-between;
+    background: var(--muted);
+    border-radius: var(--radius-xl);
+    padding: var(--space-10);
+  }
+
+  .subscribe-band__inner h2 {
+    font: 600 26px/1.25 var(--font-sans);
+    letter-spacing: -0.015em;
+    margin-bottom: var(--space-2);
+  }
+
+  @media (min-width: 768px) {
+    .row {
+      grid-template-columns: 120px 1fr 24px;
+      align-items: center;
+      gap: var(--space-8);
+    }
+
+    .row__arrow {
+      display: inline;
+    }
+
+    .subscribe-band__inner {
+      flex-direction: row;
+      align-items: center;
+    }
+  }
+</style>

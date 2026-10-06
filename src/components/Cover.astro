@@ -1,0 +1,87 @@
+---
+interface Props {
+  variant?: 'fig-01' | 'fig-02' | 'fig-03';
+  class?: string;
+}
+
+const { variant = 'fig-01', class: className } = Astro.props;
+---
+
+<svg
+  class:list={['cover', className]}
+  viewBox="0 0 1200 675"
+  preserveAspectRatio="xMidYMid slice"
+  role="img"
+  aria-hidden="true"
+  focusable="false"
+>
+  {
+    variant === 'fig-01' && (
+      <g>
+        <rect width="1200" height="675" fill="#0B0B0C" />
+        <path d="M300 0V675 M600 0V675 M900 0V675 M0 225H1200 M0 450H1200" stroke="#1F1F23" stroke-width="1" />
+        <circle cx="820" cy="330" r="170" stroke="#F6821F" stroke-width="2" fill="none" />
+        <circle cx="820" cy="330" r="6" fill="#F6821F" />
+        <path d="M120 112 h16 M128 104 v16 M1052 552 h16 M1060 544 v16" stroke="#4B4B55" stroke-width="2" />
+        <circle cx="240" cy="540" r="3" fill="#4B4B55" />
+      </g>
+    )
+  }
+  {
+    variant === 'fig-02' && (
+      <g>
+        <rect width="1200" height="675" fill="#F9F9FB" />
+        <circle cx="940" cy="337" r="120" stroke="#C9C9D1" stroke-width="1.5" fill="none" />
+        <circle cx="940" cy="337" r="220" stroke="#C9C9D1" stroke-width="1.5" fill="none" />
+        <circle cx="940" cy="337" r="320" stroke="#C9C9D1" stroke-width="1.5" fill="none" />
+        <path d="M0 640 L520 40" stroke="#E4E4E9" stroke-width="1.5" />
+        <path
+          d="M12 2 C 13.2 8.4 15.6 10.8 22 12 C 15.6 13.2 13.2 15.6 12 22 C 10.8 15.6 8.4 13.2 2 12 C 8.4 10.8 10.8 8.4 12 2 Z"
+          transform="translate(140,140) scale(2.2)"
+          stroke="#F6821F"
+          stroke-width="1.5"
+          fill="none"
+          stroke-linejoin="round"
+        />
+        <circle cx="940" cy="337" r="5" fill="#0B0B0C" />
+      </g>
+    )
+  }
+  {
+    variant === 'fig-03' && (
+      <g>
+        <rect width="1200" height="675" fill="#0B0B0C" />
+        <path
+          d="M0 360 C 100 290, 200 430, 300 360 S 500 290, 600 360 S 800 430, 900 360 S 1100 290, 1200 360"
+          stroke="#4B4B55"
+          stroke-width="1.5"
+          fill="none"
+        />
+        <path
+          d="M0 420 C 100 350, 200 490, 300 420 S 500 350, 600 420 S 800 490, 900 420 S 1100 350, 1200 420"
+          stroke="#33333A"
+          stroke-width="1.5"
+          fill="none"
+        />
+        <path
+          d="M0 300 C 100 230, 200 370, 300 300 S 500 230, 600 300 S 800 370, 900 300 S 1100 230, 1200 300"
+          stroke="#1F1F23"
+          stroke-width="1.5"
+          fill="none"
+        />
+        <circle cx="1030" cy="140" r="8" fill="#F6821F" />
+        <circle cx="180" cy="520" r="3" fill="#6B6B76" />
+      </g>
+    )
+  }
+</svg>
+
+<style>
+  .cover {
+    width: 100%;
+    height: auto;
+    aspect-ratio: 16 / 9;
+    display: block;
+    background: var(--ink-950);
+  }
+</style>

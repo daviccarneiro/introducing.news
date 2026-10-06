@@ -1,0 +1,142 @@
+---
+interface Props {
+  id?: string;
+  compact?: boolean;
+}
+const { id = 'assinar', compact = false } = Astro.props;
+const inputId = `email-${id}-${compact ? 'c' : 'f'}`;
+---
+
+<form class:list={['subscribe', { 'subscribe--compact': compact }]} id={id} data-subscribe novalidate>
+  <label class="visually-hidden" for={inputId}>Seu e-mail</label>
+  <div class="subscribe__row">
+    <input
+      type="email"
+      name="email"
+      id={inputId}
+      placeholder="seu@email.com"
+      autocomplete="email"
+      required
+    />
+    <button type="submit">Assinar</button>
+  </div>
+  <p class="subscribe__status meta" role="status" aria-live="polite" hidden></p>
+</form>
+
+<style>
+  .subscribe {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+  }
+
+  .subscribe__row {
+    display: flex;
+    gap: var(--space-3);
+    flex-wrap: wrap;
+  }
+
+  input {
+    flex: 1 1 220px;
+    min-width: 0;
+    height: 48px;
+    padding-inline: var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--card);
+    color: var(--foreground);
+    font: 400 15px/1 var(--font-sans);
+  }
+
+  input::placeholder {
+    color: var(--muted-foreground);
+  }
+
+  input:focus {
+    outline: none;
+    border-color: var(--ring);
+  }
+
+  button {
+    height: 48px;
+    padding-inline: var(--space-5);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--accent);
+    color: var(--accent-foreground);
+    font: 500 15px/1 var(--font-sans);
+    cursor: pointer;
+  }
+
+  button:hover {
+    background: var(--accent-600);
+  }
+
+  button:disabled {
+    opacity: 0.7;
+    cursor: progress;
+  }
+
+  .subscribe__status[data-state='ok'] {
+    color: var(--accent-soft-foreground);
+  }
+
+  .subscribe__status[data-state='error'] {
+    color: #b42318;
+  }
+
+  .subscribe--compact {
+    width: 100%;
+    max-width: 420px;
+  }
+</style>
+
+<script>
+  document.querySelectorAll('[data-subscribe]').forEach((form) => {
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (!(form instanceof HTMLFormElement)) return;
+      const status = form.querySelector('.subscribe__status');
+      const button = form.querySelector('button');
+      const input = form.querySelector('input');
+      if (!(status instanceof HTMLElement) || !(button instanceof HTMLButtonElement) || !(input instanceof HTMLInputElement)) return;
+
+      const email = input.value.trim();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        status.textContent = 'Digite um e-mail válido.';
+        status.dataset.state = 'error';
+        status.hidden = false;
+        return;
+      }
+
+      button.disabled = true;
+      const original = button.textContent;
+      button.textContent = 'Enviando…';
+      status.hidden = true;
+
+      try {
+        const response = await fetch('/api/subscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        });
+        const data = (await response.json().catch(() => ({}))) as { error?: string };
+        if (response.ok) {
+          form.reset();
+          status.textContent = 'Inscrição confirmada. Até a próxima edição!';
+          status.dataset.state = 'ok';
+        } else {
+          status.textContent = data?.error ?? 'Não foi possível concluir. Tente de novo.';
+          status.dataset.state = 'error';
+        }
+      } catch {
+        status.textContent = 'Falha de rede. Tente de novo.';
+        status.dataset.state = 'error';
+      } finally {
+        status.hidden = false;
+        button.disabled = false;
+        button.textContent = original;
+      }
+    });
+  });
+</script>

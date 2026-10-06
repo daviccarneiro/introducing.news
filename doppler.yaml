@@ -1,0 +1,3 @@
+setup:
+  - project: introducing-news
+    config: dev_personal
