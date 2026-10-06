@@ -105,4 +105,4 @@ Sem essas credenciais o CMS roda em modo local (`npm run dev` → `/keystatic`),
 
 ## Pendências
 
-A lista viva de pendências e melhorias (segurança, produto e manutenção) fica em [`TODO.md`](./TODO.md).
+Pendências e melhorias são acompanhadas nas **[issues do repositório](https://github.com/daviccarneiro/introducing.news/issues)** — labels `security`, `produto`, `infra` e `opcional`.

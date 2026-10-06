@@ -149,9 +149,15 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail → idioma → Assinar;
 4. `npm audit` — vulnerabilidades em `wrangler`/`miniflare`/`sharp` são tooling de build; avalie antes de forçar correções.
 5. Deploy via push na `main` e confira o workflow.
 
+## Decisões de escopo
+
+- **Sem página "Sobre"** (o CTA de LinkedIn no rodapé cobre o objetivo) e **sem grade de "edições anteriores"** na home — só a última edição + botão para o arquivo.
+- **Pendências e melhorias vivem em issues** (labels `security`, `produto`, `infra`, `opcional`), não em arquivo no repo.
+- **Sem double opt-in por ora** (prioridade em conversão): consentimento explícito + Turnstile + rate limit cobrem o essencial — ver issue correspondente.
+
 ## Referências
 
-- Pendências e melhorias conhecidas: [`TODO.md`](./TODO.md).
+- Pendências e melhorias: [issues do repositório](https://github.com/daviccarneiro/introducing.news/issues).
 - Figma: arquivo "introducing.news — Design" (Fundações/Componentes/Telas; tokens espelhados no CSS).
 - Painéis: Resend (Domains/Contacts/Segments), Cloudflare (Worker `introducing-news`, Turnstile, DNS), Doppler (projeto `introducing-news`).
 - Rotas de API: `POST /api/subscribe` (inscrição), `GET /api/lang` (troca de idioma), `/api/keystatic/*` (CMS), `/keystatic` (admin).
