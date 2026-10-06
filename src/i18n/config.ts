@@ -15,9 +15,9 @@ export type Category = (typeof CATEGORIES)[number];
 
 export const paths = {
   home: (locale: Locale) => `/${locale}/`,
-  archive: (locale: Locale) => (locale === 'pt' ? '/pt/ensaios/' : '/en/essays/'),
+  archive: (locale: Locale) => (locale === 'pt' ? '/pt/arquivo/' : '/en/essays/'),
   post: (locale: Locale, slug: string) =>
-    locale === 'pt' ? `/pt/ensaios/${slug}/` : `/en/essays/${slug}/`,
+    locale === 'pt' ? `/pt/arquivo/${slug}/` : `/en/essays/${slug}/`,
   rss: (locale: Locale) => (locale === 'pt' ? '/pt/rss.xml' : '/en/rss.xml'),
 };
 

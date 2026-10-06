@@ -5,9 +5,10 @@ import { getLocale } from '../i18n/utils';
 interface Props {
   id?: string;
   compact?: boolean;
+  centered?: boolean;
 }
 
-const { id = 'assinar', compact = false } = Astro.props;
+const { id = 'assinar', compact = false, centered = false } = Astro.props;
 const locale = getLocale(Astro.url);
 const t = useTranslations(locale);
 const inputId = `email-${id}-${compact ? 'c' : 'f'}`;
@@ -15,7 +16,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 ---
 
 <form
-  class:list={['subscribe', { 'subscribe--compact': compact }]}
+  class:list={['subscribe', { 'subscribe--compact': compact, 'subscribe--centered': centered }]}
   id={id}
   data-subscribe
   data-msg-sending={t('form.sending')}
@@ -184,6 +185,19 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
   .subscribe--compact {
     width: 100%;
     max-width: 460px;
+  }
+
+  .subscribe--centered {
+    align-items: center;
+  }
+
+  .subscribe--centered .subscribe__lang,
+  .subscribe--centered .subscribe__row {
+    justify-content: center;
+  }
+
+  .subscribe--centered .consent {
+    justify-content: center;
   }
 </style>
 

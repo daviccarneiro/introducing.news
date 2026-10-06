@@ -2,7 +2,6 @@
 import Base from '../layouts/Base.astro';
 import Badge from '../components/Badge.astro';
 import Cover from '../components/Cover.astro';
-import PostCard from '../components/PostCard.astro';
 import SubscribeForm from '../components/SubscribeForm.astro';
 import { paths, type Locale } from '../i18n/config';
 import { categoryLabel, useTranslations } from '../i18n/ui';
@@ -15,8 +14,7 @@ interface Props {
 const { locale } = Astro.props;
 const t = useTranslations(locale);
 const posts = await getPosts(locale);
-const [featured, ...others] = posts;
-const recent = others.slice(0, 3);
+const [featured] = posts;
 ---
 
 <Base>
@@ -31,8 +29,11 @@ const recent = others.slice(0, 3);
         stroke-linecap="round"></path>
     </svg>
     <p class="hero__sub">{t('home.sub')}</p>
-    <SubscribeForm id="assinar" />
-    <p class="hero__micro meta">{t('home.micro')}</p>
+  </section>
+
+  <section class="subscribe-hero container">
+    <SubscribeForm id="assinar" centered />
+    <p class="meta subscribe-hero__micro">{t('home.micro')}</p>
   </section>
 
   {
@@ -40,14 +41,8 @@ const recent = others.slice(0, 3);
       <section class="featured">
         <div class="container">
           <div class="section-head">
-            <div>
-              <p class="eyebrow">{t('home.latest.kicker')}</p>
-              <h2>{t('home.latest.title')}</h2>
-            </div>
-            <a class="link-arrow" href={paths.archive(locale)}>
-              {t('home.seeAll')}
-              <span aria-hidden="true">↗</span>
-            </a>
+            <p class="eyebrow">{t('home.latest.kicker')}</p>
+            <h2>{t('home.latest.title')}</h2>
           </div>
 
           <article class="featured__card">
@@ -83,36 +78,19 @@ const recent = others.slice(0, 3);
               <Cover variant={featured.data.cover} src={featured.data.coverImage} />
             </a>
           </article>
-        </div>
-      </section>
-    )
-  }
 
-  {
-    recent.length > 0 && (
-      <section class="grid-section container">
-        <div class="section-head">
-          <div>
-            <p class="eyebrow">{t('home.recent.kicker')}</p>
-            <h2>{t('home.recent.title')}</h2>
+          <div class="featured__more">
+            <a class="button button--secondary" href={paths.archive(locale)}>
+              {t('home.seeAll')}
+              <span aria-hidden="true">↗</span>
+            </a>
           </div>
         </div>
-        <div class="grid">
-          {recent.map((post) => (
-            <PostCard post={post} />
-          ))}
-        </div>
-        <div class="grid__more">
-          <a class="button button--secondary" href={paths.archive(locale)}>
-            {t('home.seeAll')}
-            <span aria-hidden="true">↗</span>
-          </a>
-        </div>
       </section>
     )
   }
 
-  <section class="cta container" id="about">
+  <section class="cta container">
     <div class="cta__band">
       <div class="cta__content">
         <p class="eyebrow cta__eyebrow">{t('home.cta.kicker')}</p>
@@ -128,7 +106,7 @@ const recent = others.slice(0, 3);
             {t('home.cta.linkedin')}
             <span aria-hidden="true">↗</span>
           </a>
-          <a class="button button--ghost-inverse" href={paths.archive(locale)}>{t('home.cta.essays')}</a>
+          <a class="button button--ghost-inverse" href={paths.archive(locale)}>{t('home.cta.browse')}</a>
         </div>
       </div>
       <svg class="cta__doodle" width="48" height="48" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -144,7 +122,7 @@ const recent = others.slice(0, 3);
 
 <style>
   .hero {
-    padding-block: var(--space-24) var(--space-20);
+    padding-block: var(--space-24) var(--space-8);
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -168,15 +146,25 @@ const recent = others.slice(0, 3);
     max-width: 640px;
   }
 
-  .hero__micro {
+  .subscribe-hero {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-3);
+    padding-bottom: var(--space-20);
+  }
+
+  .subscribe-hero :global(.subscribe) {
+    width: 100%;
+    max-width: 520px;
+  }
+
+  .subscribe-hero__micro {
     margin: 0;
+    text-align: center;
   }
 
   .section-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-6);
     margin-bottom: var(--space-6);
   }
 
@@ -260,17 +248,7 @@ const recent = others.slice(0, 3);
     letter-spacing: 0.06em;
   }
 
-  .grid-section {
-    padding-block: var(--space-20) var(--space-12);
-  }
-
-  .grid {
-    display: grid;
-    gap: var(--space-6);
-    grid-template-columns: 1fr;
-  }
-
-  .grid__more {
+  .featured__more {
     display: flex;
     justify-content: center;
     margin-top: var(--space-8);
@@ -348,10 +326,6 @@ const recent = others.slice(0, 3);
   }
 
   @media (min-width: 900px) {
-    .grid {
-      grid-template-columns: repeat(3, 1fr);
-    }
-
     .featured__card {
       grid-template-columns: 1.1fr 1fr;
     }

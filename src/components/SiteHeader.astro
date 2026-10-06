@@ -13,11 +13,7 @@ const t = useTranslations(locale);
 const other = OTHER[locale];
 const nextPath = otherLocalePath(Astro.url, alternate);
 
-const nav = [
-  { label: t('nav.essays'), href: paths.archive(locale) },
-  { label: t('nav.about'), href: `${paths.home(locale)}#about` },
-  { label: t('nav.archive'), href: paths.archive(locale) },
-];
+const nav = [{ label: t('nav.list'), href: paths.archive(locale) }];
 ---
 
 <header class="header">
@@ -33,7 +29,7 @@ const nav = [
       <span class="logo__mark">introducing<span class="logo__tld">.news</span></span>
     </a>
 
-    <nav class="nav" aria-label={t('nav.essays')}>
+    <nav class="nav" aria-label={t('nav.list')}>
       {nav.map((item) => <a href={item.href}>{item.label}</a>)}
     </nav>
 

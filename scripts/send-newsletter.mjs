@@ -103,7 +103,7 @@ const api = async (path, options = {}) => {
 
 function emailHtml(locale, post) {
   const copy = COPY[locale];
-  const url = `${SITE}/${locale}/${locale === 'pt' ? 'ensaios' : 'essays'}/${post.slug}/`;
+  const url = `${SITE}/${locale}/${locale === 'pt' ? 'arquivo' : 'essays'}/${post.slug}/`;
   const title = escapeHtml(post.title);
   const description = escapeHtml(post.description);
 
