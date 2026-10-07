@@ -20,24 +20,13 @@ export const TEMPLATE_ALIAS = 'introducing-news-nova-edicao';
 export const TEMPLATE_SUBJECT = 'Nova edição da introducing.news';
 
 const COPY = {
-  pt: {
-    lang: 'pt-BR',
-    tagline: 'Novidades de tecnologia, curadas por professores e profissionais.',
-    kicker: 'Nova edição',
-    cta: 'Ler a edição completa',
-    signOff: 'Um abraço,',
-    foot: 'Você recebe este e-mail porque assinou a introducing.news.',
-    unsubscribe: 'cancelar inscrição',
-  },
-  en: {
-    lang: 'en',
-    tagline: 'Technology news curated by professors and professionals.',
-    kicker: 'New edition',
-    cta: 'Read the full edition',
-    signOff: 'Best,',
-    foot: 'You are receiving this email because you subscribed to introducing.news.',
-    unsubscribe: 'unsubscribe',
-  },
+  lang: 'pt-BR',
+  tagline: 'Novidades de tecnologia, curadas por professores e profissionais.',
+  kicker: 'Nova edição',
+  cta: 'Ler a edição completa',
+  signOff: 'Um abraço,',
+  foot: 'Você recebe este e-mail porque assinou a introducing.news.',
+  unsubscribe: 'cancelar inscrição',
 };
 
 export const templateHtml = `<!doctype html>
@@ -161,25 +150,24 @@ export function renderText(values) {
 }
 
 /** Monta HTML e texto do e-mail de uma edição. */
-export function buildEmail({ locale, title, description, url, site, author }) {
-  const copy = COPY[locale] ?? COPY.pt;
+export function buildEmail({ title, description, url, site, author }) {
   const variables = {
-    LANG: copy.lang,
-    TAGLINE: copy.tagline,
-    KICKER: copy.kicker,
+    LANG: COPY.lang,
+    TAGLINE: COPY.tagline,
+    KICKER: COPY.kicker,
     TITLE: title,
     DESCRIPTION: description,
-    CTA_LABEL: copy.cta,
+    CTA_LABEL: COPY.cta,
     CTA_URL: url,
-    SIGN_OFF: copy.signOff,
+    SIGN_OFF: COPY.signOff,
     SIGNATURE_AVATAR: avatarHtml(author, site),
     SIGNATURE_NAME: author.name,
     SIGNATURE_ROLE_LINE: author.role
       ? `<p style="margin:2px 0 0 0;font-family:${SANS};font-size:13px;line-height:1.5;color:#9A9AA4;">${escapeHtml(author.role)}</p>`
       : '',
     SIGNATURE_ROLE_TEXT: author.role ?? '',
-    FOOT_MESSAGE: copy.foot,
-    UNSUBSCRIBE_LABEL: copy.unsubscribe,
+    FOOT_MESSAGE: COPY.foot,
+    UNSUBSCRIBE_LABEL: COPY.unsubscribe,
     UNSUBSCRIBE_URL: '{{{RESEND_UNSUBSCRIBE_URL}}}',
     SITE_URL: site,
   };
@@ -187,20 +175,20 @@ export function buildEmail({ locale, title, description, url, site, author }) {
 }
 
 const fallbackVariables = {
-  LANG: 'pt-BR',
-  TAGLINE: COPY.pt.tagline,
-  KICKER: COPY.pt.kicker,
+  LANG: COPY.lang,
+  TAGLINE: COPY.tagline,
+  KICKER: COPY.kicker,
   TITLE: 'Título da edição',
   DESCRIPTION: 'Resumo curto da edição, direto no e-mail.',
-  CTA_LABEL: COPY.pt.cta,
-  CTA_URL: 'https://introducing.news/pt/arquivo/',
-  SIGN_OFF: COPY.pt.signOff,
+  CTA_LABEL: COPY.cta,
+  CTA_URL: 'https://introducing.news/arquivo/',
+  SIGN_OFF: COPY.signOff,
   SIGNATURE_AVATAR: avatarHtml({ name: 'Davi Carneiro' }, 'https://introducing.news'),
   SIGNATURE_NAME: 'Davi Carneiro',
   SIGNATURE_ROLE_LINE:
     '<p style="margin:2px 0 0 0;font-family:' + SANS + ';font-size:13px;line-height:1.5;color:#9A9AA4;">Cargo ou linha de assinatura</p>',
-  FOOT_MESSAGE: COPY.pt.foot,
-  UNSUBSCRIBE_LABEL: COPY.pt.unsubscribe,
+  FOOT_MESSAGE: COPY.foot,
+  UNSUBSCRIBE_LABEL: COPY.unsubscribe,
   UNSUBSCRIBE_URL: 'https://introducing.news',
   SITE_URL: 'https://introducing.news',
 };

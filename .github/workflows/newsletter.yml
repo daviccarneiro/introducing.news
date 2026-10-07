@@ -27,6 +27,5 @@ jobs:
         env:
           SLUG: ${{ inputs.slug }}
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          RESEND_SEGMENT_PT: ${{ secrets.RESEND_SEGMENT_PT }}
-          RESEND_SEGMENT_EN: ${{ secrets.RESEND_SEGMENT_EN }}
+          RESEND_SEGMENT_ID: ${{ secrets.RESEND_SEGMENT_ID }}
           SITE_URL: https://introducing.news
