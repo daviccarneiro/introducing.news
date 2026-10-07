@@ -304,6 +304,13 @@ const [featured] = posts;
   .button--accent {
     background: var(--accent);
     color: var(--accent-foreground);
+    transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  .button--accent:hover {
+    background: var(--accent-600);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
   }
 
   .button--ghost-inverse {

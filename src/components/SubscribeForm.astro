@@ -82,7 +82,8 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 
   .subscribe__lang {
     display: flex;
-    gap: var(--space-2);
+    flex-direction: column;
+    gap: 4px;
     margin: 0;
     padding: 0;
     border: 0;
@@ -91,6 +92,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
   .lang-pill {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: var(--space-2);
     padding: 5px 10px;
     border: 1px solid var(--border);
@@ -118,6 +120,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     display: flex;
     gap: var(--space-3);
     flex-wrap: wrap;
+    align-items: center;
   }
 
   input[type='email'] {
@@ -146,20 +149,23 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     padding-inline: var(--space-5);
     border: 0;
     border-radius: var(--radius-md);
-    background: var(--ink-200);
-    color: var(--ink-500);
+    background: var(--primary);
+    color: var(--primary-foreground);
     font: 500 15px/1 var(--font-sans);
-    cursor: pointer;
-    transition: background 0.15s ease, color 0.15s ease;
+    cursor: not-allowed;
+    transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
   }
 
   .subscribe[data-lang] button {
     background: var(--accent);
     color: var(--accent-foreground);
+    cursor: pointer;
   }
 
   .subscribe[data-lang] button:hover {
     background: var(--accent-600);
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-sm);
   }
 
   button:disabled {
@@ -205,8 +211,19 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
       if (selected instanceof HTMLInputElement) form.dataset.lang = selected.value;
       else delete form.dataset.lang;
     };
+    // Clicar na opção já marcada desliga (toggle), deixando o Assinar inativo.
+    let lastChecked: HTMLInputElement | null = null;
     form.querySelectorAll('input[name="locale"]').forEach((radio) => {
-      radio.addEventListener('change', syncButtonState);
+      if (!(radio instanceof HTMLInputElement)) return;
+      radio.addEventListener('click', () => {
+        if (lastChecked === radio) {
+          radio.checked = false;
+          lastChecked = null;
+        } else {
+          lastChecked = radio;
+        }
+        syncButtonState();
+      });
     });
     syncButtonState();
 
