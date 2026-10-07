@@ -8,22 +8,21 @@ import { formatDate, getPosts, readingTime } from '../lib/posts';
 
 const posts = await getPosts();
 const [featured] = posts;
+const featuredHref = featured ? `/arquivo/${featured.id}/` : '/';
 ---
 
 <Base>
   <section class="hero container" id="assinar">
-    <p class="eyebrow">{t('home.eyebrow')}</p>
-    <h1>{t('home.title')}</h1>
-    <svg class="doodle" width="240" height="17" viewBox="0 0 240 17" fill="none" aria-hidden="true">
-      <path
-        d="M4 10 C 38 3, 68 14, 100 8 S 160 3, 190 9 S 228 7, 236 5"
-        stroke="#F6821F"
-        stroke-width="3"
-        stroke-linecap="round"></path>
-    </svg>
+    <h1>
+      {t('home.title.line1')}<br />
+      <span class="mark">
+        <img class="mark__bg" src="/images/highlight.svg" width="363" height="56" alt="" aria-hidden="true" />
+        <span class="mark__text">{t('home.title.line2')}</span>
+      </span>
+    </h1>
     <p class="hero__sub">{t('home.sub')}</p>
     <SubscribeForm id="assinar-form" />
-    <p class="meta hero__micro">{t('home.micro')}</p>
+    <p class="meta">{t('home.micro')}</p>
   </section>
 
   {
@@ -31,46 +30,36 @@ const [featured] = posts;
       <section class="featured">
         <div class="container">
           <div class="section-head">
-            <div>
-              <p class="eyebrow">{t('home.latest.kicker')}</p>
-              <h2>{t('home.latest.title')}</h2>
-            </div>
-            <a class="button button--secondary" href="/arquivo/">
-              {t('home.seeAll')}
-              <span aria-hidden="true">↗</span>
-            </a>
+            <h2>{t('home.latest.title')}</h2>
+            <a class="button button--secondary" href="/arquivo/">{t('home.seeAll')}</a>
           </div>
 
           <article class="featured__card">
             <div class="featured__body">
-              <div class="featured__meta">
-                <Badge tone="accent">{categoryLabel(featured.data.category)}</Badge>
+              <div class="featured__title-row">
+                <h3>
+                  <a href={featuredHref}>{featured.data.title}</a>
+                </h3>
+                <Badge>{categoryLabel(featured.data.category)}</Badge>
               </div>
-              <h3>
-                <a href={`/arquivo/${featured.id}/`}>{featured.data.title}</a>
-              </h3>
               <p class="featured__lead">{featured.data.description}</p>
               <div class="featured__author">
                 <span class="avatar" aria-hidden="true">DC</span>
-                <div>
+                <div class="featured__author-info">
                   <p class="featured__name">Davi Carneiro</p>
                   <p class="meta featured__byline">
-                    <span>{formatDate(featured.data.publishedAt)}</span>
+                    <span class="featured__date">{formatDate(featured.data.publishedAt)}</span>
+                    <span aria-hidden="true">·</span>
                     <span>{readingTime(featured)} {t('post.minRead')}</span>
                   </p>
                 </div>
               </div>
-              <a class="link-arrow" href={`/arquivo/${featured.id}/`}>
+              <a class="link-arrow" href={featuredHref}>
                 {t('home.latest.link')}
-                <span aria-hidden="true">↗</span>
+                <img src="/icons/arrow-right.svg" width="16" height="16" alt="" aria-hidden="true" />
               </a>
             </div>
-            <a
-              class="featured__cover"
-              href={`/arquivo/${featured.id}/`}
-              tabindex="-1"
-              aria-hidden="true"
-            >
+            <a class="featured__cover" href={featuredHref} tabindex="-1" aria-hidden="true">
               <Cover variant={featured.data.cover} src={featured.data.coverImage} />
             </a>
           </article>
@@ -82,7 +71,6 @@ const [featured] = posts;
   <section class="cta container">
     <div class="cta__band">
       <div class="cta__content">
-        <p class="eyebrow cta__eyebrow">{t('home.cta.kicker')}</p>
         <h2>{t('home.cta.title')}</h2>
         <p>{t('home.cta.body')}</p>
         <div class="cta__actions">
@@ -93,18 +81,12 @@ const [featured] = posts;
             rel="noopener"
           >
             {t('home.cta.linkedin')}
-            <span aria-hidden="true">↗</span>
+            <img src="/icons/arrow-right-accent.svg" width="16" height="16" alt="" aria-hidden="true" />
           </a>
           <a class="button button--ghost-inverse" href="/arquivo/">{t('home.cta.browse')}</a>
         </div>
       </div>
-      <svg class="cta__doodle" width="48" height="48" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path
-          d="M12 2 C 13.2 8.4 15.6 10.8 22 12 C 15.6 13.2 13.2 15.6 12 22 C 10.8 15.6 8.4 13.2 2 12 C 8.4 10.8 10.8 8.4 12 2 Z"
-          stroke="#F6821F"
-          stroke-width="2"
-          stroke-linejoin="round"></path>
-      </svg>
+      <img class="cta__doodle" src="/icons/sparkle.svg" width="40" height="40" alt="" aria-hidden="true" />
     </div>
   </section>
 </Base>
@@ -119,47 +101,66 @@ const [featured] = posts;
   }
 
   .hero h1 {
-    font: 700 clamp(40px, 6vw, 72px) / 1.02 var(--font-sans);
-    letter-spacing: -0.03em;
+    font: 600 clamp(40px, 5.5vw, 64px) / 1.05 var(--font-serif);
+    letter-spacing: -0.015em;
     max-width: 900px;
   }
 
-  .doodle {
-    margin-top: calc(-1 * var(--space-4));
-    margin-left: 150px;
+  .mark {
+    position: relative;
+    display: inline-block;
+  }
+
+  .mark__bg {
+    position: absolute;
+    left: -2px;
+    top: 50%;
+    width: calc(100% + 8px);
+    max-width: none;
+    height: 0.875em;
+    transform: translateY(-50%) rotate(1.2deg);
+    clip-path: inset(0 100% 0 0);
+    animation: mark-sweep 0.5s ease-out 1s forwards;
+  }
+
+  @keyframes mark-sweep {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .mark__bg {
+      clip-path: none;
+      animation: none;
+    }
+  }
+
+  .mark__text {
+    position: relative;
   }
 
   .hero__sub {
     font: 400 16px/1.6 var(--font-sans);
     color: var(--muted-foreground);
-    max-width: 640px;
-  }
-
-  .hero__micro {
-    margin: 0;
+    max-width: 620px;
   }
 
   .section-head {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: var(--space-6);
+    gap: var(--space-4) var(--space-6);
     margin-bottom: var(--space-6);
   }
 
   .section-head h2 {
-    font: 600 26px/1.25 var(--font-sans);
-    letter-spacing: -0.015em;
-    margin-top: var(--space-2);
-  }
-
-  .link-arrow {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-2);
-    font: 500 14px/1 var(--font-sans);
-    color: var(--link);
-    text-decoration: none;
+    font: 600 28px/1.22 var(--font-serif);
+    letter-spacing: -0.01em;
   }
 
   .featured {
@@ -183,25 +184,26 @@ const [featured] = posts;
     padding: var(--space-10);
   }
 
-  .featured__meta {
+  .featured__title-row {
     display: flex;
-    align-items: center;
+    align-items: baseline;
     gap: var(--space-3);
   }
 
-  .featured__card h3 {
-    font: 600 clamp(28px, 3.4vw, 40px) / 1.12 var(--font-sans);
-    letter-spacing: -0.02em;
+  .featured__title-row h3 {
+    min-width: 0;
+    font: 600 clamp(30px, 3.2vw, 44px) / 1.3 var(--font-serif);
+    letter-spacing: -0.015em;
   }
 
-  .featured__card h3 a {
+  .featured__title-row h3 a {
     text-decoration: none;
   }
 
   .featured__lead {
     font: 400 21px/1.65 var(--font-serif);
     color: var(--muted-foreground);
-    max-width: 560px;
+    max-width: 542px;
   }
 
   .featured__author {
@@ -210,13 +212,23 @@ const [featured] = posts;
     gap: var(--space-3);
   }
 
+  .featured__author-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
   .featured__name {
     font: 500 17px/1.4 var(--font-sans);
   }
 
   .featured__byline {
     display: flex;
-    gap: var(--space-2);
+    gap: var(--space-1);
+  }
+
+  .featured__date {
+    text-transform: uppercase;
   }
 
   .avatar {
@@ -232,23 +244,29 @@ const [featured] = posts;
     letter-spacing: 0.06em;
   }
 
+  .link-arrow {
+    display: inline-flex;
+    align-items: center;
+    align-self: flex-start;
+    gap: var(--space-2);
+    font: 500 14px/1.4 var(--font-sans);
+    color: var(--link);
+    text-decoration: none;
+  }
+
   .cta {
-    padding-block: var(--space-12) var(--space-20);
+    padding-block: var(--space-20) var(--space-6);
   }
 
   .cta__band {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-12);
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-8);
     background: var(--primary);
     color: var(--primary-foreground);
     border-radius: var(--radius-xl);
-    padding: var(--space-16);
-  }
-
-  .cta__eyebrow {
-    color: var(--accent);
+    padding: var(--space-10);
   }
 
   .cta__content {
@@ -259,19 +277,19 @@ const [featured] = posts;
   }
 
   .cta__content h2 {
-    font: 600 26px/1.25 var(--font-sans);
-    letter-spacing: -0.015em;
+    font: 600 28px/1.22 var(--font-serif);
+    letter-spacing: -0.01em;
   }
 
   .cta__content p {
     color: var(--ink-400);
+    max-width: 460px;
   }
 
   .cta__actions {
     display: flex;
     flex-wrap: wrap;
     gap: var(--space-4);
-    margin-top: var(--space-2);
   }
 
   .button {
@@ -279,24 +297,25 @@ const [featured] = posts;
     align-items: center;
     justify-content: center;
     gap: var(--space-2);
-    height: 48px;
-    padding-inline: var(--space-5);
     border-radius: var(--radius-md);
-    font: 500 15px/1 var(--font-sans);
+    font: 500 14px/1.4 var(--font-sans);
     text-decoration: none;
   }
 
   .button--secondary {
     height: 40px;
-    font-size: 14px;
+    padding-inline: var(--space-4);
     border: 1px solid var(--border);
     background: var(--card);
     color: var(--foreground);
   }
 
   .button--accent {
+    height: 48px;
+    padding-inline: var(--space-5);
     background: var(--accent);
     color: var(--accent-foreground);
+    font-size: 15px;
     transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
   }
 
@@ -307,35 +326,29 @@ const [featured] = posts;
   }
 
   .button--ghost-inverse {
+    height: 40px;
+    padding-inline: var(--space-4);
     color: var(--primary-foreground);
   }
 
-  @media (min-width: 900px) {
+  @media (min-width: 768px) {
+    .cta__band {
+      flex-direction: row;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-12);
+      padding: var(--space-16);
+    }
+  }
+
+  @media (min-width: 1000px) {
     .featured__card {
       grid-template-columns: 1.1fr 1fr;
-    }
-
-    .featured__cover {
-      order: 2;
-      align-self: stretch;
-    }
-
-    .featured__cover :global(.cover) {
-      height: 100%;
-      object-fit: cover;
+      align-items: center;
     }
   }
 
   @media (max-width: 640px) {
-    .doodle {
-      margin-left: 0;
-    }
-
-    .featured__byline {
-      flex-direction: column;
-      gap: 0;
-    }
-
     .section-head .button--secondary {
       height: 36px;
       font-size: 13px;

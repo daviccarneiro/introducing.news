@@ -1,0 +1,65 @@
+name: Publicar batch
+
+on:
+  # O commit do Keystatic ao programar uma edição (status: scheduled) dispara a
+  # triagem; se nada estiver pronto e vencido, o job de publicação nem inicia.
+  push:
+    branches: [main]
+    paths:
+      - 'src/content/posts/**'
+  schedule:
+    # Segundas e quintas, 09:00 America/Sao_Paulo (UTC-3, sem horário de verão).
+    - cron: '0 12 * * 1,4'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+concurrency:
+  group: publish-batch
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    outputs:
+      due: ${{ steps.scan.outputs.due }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Verificar edição programada, pronta e vencida
+        id: scan
+        run: echo "due=$(node scripts/publish-batch.mjs --check)" >> "$GITHUB_OUTPUT"
+      - name: Nada a publicar
+        if: steps.scan.outputs.due != 'yes'
+        run: echo "Nenhuma edição programada, pronta e vencida — nenhuma etapa de publicação foi executada." >> "$GITHUB_STEP_SUMMARY"
+
+  publish:
+    needs: check
+    if: needs.check.outputs.due == 'yes'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Publicar edições programadas
+        run: node scripts/publish-batch.mjs
+      - name: Commit, push e deploy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if git diff --quiet; then
+            echo "Nada mudou."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/content/posts
+          git commit -m "chore(content): publicar edições do batch"
+          git push
+          # Push com GITHUB_TOKEN não dispara outros workflows; aciona o Deploy.
+          gh workflow run deploy.yml --ref main

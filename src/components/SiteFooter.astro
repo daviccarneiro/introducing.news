@@ -5,40 +5,29 @@ const year = new Date().getFullYear();
 ---
 
 <footer class="footer">
-  <div class="container">
+  <div class="container footer__inner">
     <div class="footer__top">
       <div class="footer__brand">
         <a class="logo" href="/" aria-label="introducing.news">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-            <path
-              d="M12 2 C 13.2 8.4 15.6 10.8 22 12 C 15.6 13.2 13.2 15.6 12 22 C 10.8 15.6 8.4 13.2 2 12 C 8.4 10.8 10.8 8.4 12 2 Z"
-              stroke="#F6821F"
-              stroke-width="2"
-              stroke-linejoin="round"></path>
-          </svg>
+          <img src="/icons/sparkle.svg" width="20" height="20" alt="" aria-hidden="true" />
           <span class="logo__mark">introducing<span class="logo__tld">.news</span></span>
         </a>
-        <p>{t('footer.blurb')}</p>
+        <p class="footer__blurb">{t('footer.blurb')}</p>
         <div class="footer__social">
           <a href="https://www.linkedin.com/in/daviccarneiro/" target="_blank" rel="noopener" aria-label="LinkedIn">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B6B76" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
-              <rect width="4" height="12" x="2" y="9"></rect>
-              <circle cx="4" cy="4" r="2"></circle>
-            </svg>
+            <img src="/icons/linkedin.svg" width="18" height="18" alt="" aria-hidden="true" />
           </a>
           <a href="/rss.xml" aria-label="RSS">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6B6B76" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M4 11a9 9 0 0 1 9 9"></path>
-              <path d="M4 4a16 16 0 0 1 16 16"></path>
-              <circle cx="5" cy="19" r="1"></circle>
-            </svg>
+            <img src="/icons/rss.svg" width="18" height="18" alt="" aria-hidden="true" />
           </a>
         </div>
       </div>
 
       <div class="footer__aside">
-        <a href="/arquivo/">{t('nav.list')}</a>
+        <nav class="footer__links" aria-label="Navegação do rodapé">
+          <a href="/arquivo/">{t('nav.list')}</a>
+          <a href="/rss.xml">RSS</a>
+        </nav>
         <a class="button" href="/#assinar">{t('nav.subscribe')}</a>
       </div>
     </div>
@@ -46,8 +35,11 @@ const year = new Date().getFullYear();
     <div class="footer__divider"></div>
 
     <div class="footer__bottom">
-      <p class="meta">© {year} introducing.news</p>
-      <p class="meta">{t('footer.madeBy')}{' '}<a href="https://davi.cc" target="_blank" rel="noopener">Davi Carneiro</a></p>
+      <p class="footer__legal">© {year} introducing.news</p>
+      <p class="footer__legal">
+        {t('footer.madeBy')}{' '}
+        <a href="https://davi.cc" target="_blank" rel="noopener">Davi Carneiro</a>
+      </p>
     </div>
   </div>
 </footer>
@@ -55,8 +47,14 @@ const year = new Date().getFullYear();
 <style>
   .footer {
     border-top: 1px solid var(--border);
-    padding-block: var(--space-16) var(--space-10);
     background: var(--background);
+  }
+
+  .footer__inner {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-10);
+    padding-block: var(--space-16) var(--space-10);
   }
 
   .footer__top {
@@ -81,7 +79,7 @@ const year = new Date().getFullYear();
   }
 
   .logo__mark {
-    font: 600 18px/1 var(--font-sans);
+    font: 600 18px/1 'Inter', var(--font-sans);
     letter-spacing: -0.01em;
   }
 
@@ -89,7 +87,7 @@ const year = new Date().getFullYear();
     color: var(--muted-foreground);
   }
 
-  .footer__brand p {
+  .footer__blurb {
     font: 400 14px/1.5 var(--font-sans);
     color: var(--muted-foreground);
   }
@@ -101,36 +99,48 @@ const year = new Date().getFullYear();
 
   .footer__aside {
     display: flex;
-    align-items: center;
+    flex-direction: column;
+    align-items: flex-start;
     gap: var(--space-6);
   }
 
-  .footer__aside a {
-    font: 400 14px/1.5 var(--font-sans);
+  .footer__links {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .footer__links a {
+    font: 400 13px/1.4 var(--font-mono);
     color: var(--muted-foreground);
     text-decoration: none;
   }
 
-  .footer__aside a:hover {
+  .footer__links a:hover {
     color: var(--foreground);
   }
 
-  .footer__aside .button {
+  .button {
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     height: 40px;
     padding-inline: var(--space-4);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     background: var(--card);
     color: var(--foreground);
-    font: 500 14px/1 var(--font-sans);
+    font: 500 14px/1.4 var(--font-sans);
+    text-decoration: none;
+  }
+
+  .button:hover {
+    border-color: var(--border-strong);
   }
 
   .footer__divider {
     height: 1px;
     background: var(--border);
-    margin-block: var(--space-10);
   }
 
   .footer__bottom {
@@ -140,16 +150,27 @@ const year = new Date().getFullYear();
     justify-content: space-between;
   }
 
-  .footer__bottom a {
+  .footer__legal {
+    font: 400 13px/1.4 var(--font-mono);
+    color: var(--muted-foreground);
+  }
+
+  .footer__legal a {
     color: var(--foreground);
     text-decoration: none;
-    border-bottom: 1px solid var(--accent);
+    border-bottom: 1.5px solid var(--accent);
   }
 
   @media (min-width: 768px) {
     .footer__top {
       flex-direction: row;
       align-items: flex-start;
+    }
+
+    .footer__aside {
+      flex-direction: row;
+      align-items: flex-start;
+      gap: var(--space-24);
     }
   }
 </style>

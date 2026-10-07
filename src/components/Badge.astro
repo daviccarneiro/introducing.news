@@ -1,34 +1,23 @@
 ---
 interface Props {
-  tone?: 'outline' | 'accent';
   class?: string;
 }
 
-const { tone = 'outline', class: className } = Astro.props;
+const { class: className } = Astro.props;
 ---
 
-<span class:list={['badge', `badge--${tone}`, className]}><slot /></span>
+<span class:list={['tag', className]}><slot /></span>
 
 <style>
-  .badge {
+  .tag {
     display: inline-flex;
     align-items: center;
-    padding: var(--space-1) var(--space-3);
-    border-radius: var(--radius-full);
-    font: 500 11px/1.2 var(--font-mono);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
+    padding: var(--space-1) var(--space-2);
+    background: var(--paper);
+    border: 1px solid var(--foreground);
+    border-radius: var(--radius-md);
+    font: 400 13px/1.4 var(--font-sans);
+    color: var(--accent-600);
     white-space: nowrap;
-  }
-
-  .badge--outline {
-    background: var(--card);
-    border: 1px solid var(--border);
-    color: var(--foreground);
-  }
-
-  .badge--accent {
-    background: var(--accent-soft);
-    color: var(--accent-soft-foreground);
   }
 </style>

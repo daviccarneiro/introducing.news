@@ -12,8 +12,22 @@ const posts = defineCollection({
     cover: z.enum(['fig-01', 'fig-02', 'fig-03']).default('fig-01'),
     /** Imagem de capa enviada pelo CMS; sobrepõe a figura abstrata. */
     coverImage: z.string().optional(),
-    draft: z.boolean().default(false),
+    /** Slug do autor (coleção `authors`) que assina o e-mail da edição. */
+    signature: z.string().optional(),
+    /** Fluxo editorial: rascunho → revisão → programada → publicada. */
+    status: z.enum(['draft', 'review', 'scheduled', 'published']).default('draft'),
   }),
 });
 
-export const collections = { posts };
+const authors = defineCollection({
+  loader: glob({ base: './src/content/authors', pattern: '**/*.json' }),
+  schema: z.object({
+    name: z.string(),
+    /** Linha exibida abaixo do nome na assinatura do e-mail. */
+    role: z.string().optional(),
+    /** Caminho público da foto (ex.: `/images/authors/foo.jpg`). */
+    photo: z.string().optional(),
+  }),
+});
+
+export const collections = { posts, authors };

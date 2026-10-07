@@ -23,7 +23,10 @@ const postSchema = {
     ],
     defaultValue: 'ensaio',
   }),
-  publishedAt: fields.date({ label: 'Data de publicação' }),
+  publishedAt: fields.date({
+    label: 'Data de publicação',
+    description: 'Para posts programados, use uma segunda ou uma quinta (dia do batch).',
+  }),
   cover: fields.select({
     label: 'Capa',
     options: [
@@ -39,11 +42,38 @@ const postSchema = {
     directory: 'public/images/covers',
     publicPath: '/images/covers/',
   }),
-  draft: fields.checkbox({
-    label: 'Rascunho',
-    description: 'Rascunhos não aparecem no site.',
+  signature: fields.relationship({
+    label: 'Assinatura do e-mail',
+    description: 'Quem assina o e-mail que anuncia esta edição. Cadastre a pessoa em Autores.',
+    collection: 'authors',
+    validation: { isRequired: true },
+  }),
+  status: fields.select({
+    label: 'Status',
+    description: 'Rascunho → Em revisão → Programada (entra no batch) → Publicada (no site).',
+    options: [
+      { label: 'Rascunho', value: 'draft' },
+      { label: 'Em revisão', value: 'review' },
+      { label: 'Programada', value: 'scheduled' },
+      { label: 'Publicada', value: 'published' },
+    ],
+    defaultValue: 'draft',
   }),
   content: fields.mdx({ label: 'Conteúdo' }),
+};
+
+const authorSchema = {
+  name: fields.slug({ name: { label: 'Nome' } }),
+  role: fields.text({
+    label: 'Cargo / linha de assinatura',
+    description: 'Aparece abaixo do nome na assinatura do e-mail (opcional).',
+  }),
+  photo: fields.image({
+    label: 'Foto',
+    description: 'Usada no e-mail e no site. Prefira uma imagem quadrada com fundo neutro.',
+    directory: 'public/images/authors',
+    publicPath: '/images/authors/',
+  }),
 };
 
 export default config({
@@ -53,7 +83,8 @@ export default config({
   ui: {
     brand: { name: 'introducing.news' },
     navigation: {
-      Edições: ['posts'],
+      'Edições': ['posts'],
+      'Autores': ['authors'],
     },
   },
   collections: {
@@ -63,8 +94,16 @@ export default config({
       path: 'src/content/posts/*',
       entryLayout: 'content',
       format: { contentField: 'content' },
-      columns: ['title', 'publishedAt'],
+      columns: ['title', 'status', 'publishedAt'],
       schema: postSchema,
+    }),
+    authors: collection({
+      label: 'Autores',
+      slugField: 'name',
+      path: 'src/content/authors/*',
+      format: { data: 'json' },
+      columns: ['name', 'role'],
+      schema: authorSchema,
     }),
   },
 });

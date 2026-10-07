@@ -2,7 +2,7 @@
 import Base from '../layouts/Base.astro';
 import Badge from '../components/Badge.astro';
 import SubscribeForm from '../components/SubscribeForm.astro';
-import { categoryLabel, t } from '../copy';
+import { CATEGORIES, categoryLabel, t } from '../copy';
 import { formatDate, getPosts, readingTime } from '../lib/posts';
 
 const posts = await getPosts();
@@ -10,99 +10,154 @@ const posts = await getPosts();
 
 <Base title={t('meta.archive.title')} description={t('meta.archive.description')}>
   <section class="head container">
-    <p class="eyebrow">{t('archive.eyebrow')}</p>
     <h1>{t('archive.title')}</h1>
     <p class="head__sub">{t('archive.sub')}</p>
   </section>
 
+  <div class="filters container">
+    <label class="visually-hidden" for="filtro-categoria">{t('archive.filter.label')}</label>
+    <div class="select">
+      <select id="filtro-categoria" data-category-filter>
+        <option value="">{t('archive.filter.all')}</option>
+        {CATEGORIES.map((category) => <option value={category}>{categoryLabel(category)}</option>)}
+      </select>
+      <img class="select__icon" src="/icons/chevron-down.svg" width="16" height="16" alt="" aria-hidden="true" />
+    </div>
+  </div>
+
   <section class="list container">
     {
-      posts.length === 0 && <p class="meta">{t('archive.empty')}</p>
-    }
-    {
       posts.map((post) => (
-        <a class="row" href={`/arquivo/${post.id}/`}>
+        <a class="row" href={`/arquivo/${post.id}/`} data-category={post.data.category}>
           <div class="row__meta">
-            <time class="meta" datetime={post.data.publishedAt.toISOString()}>
+            <time datetime={post.data.publishedAt.toISOString()}>
               {formatDate(post.data.publishedAt)}
             </time>
-            <Badge tone="accent">{categoryLabel(post.data.category)}</Badge>
-            <span class="meta row__reading">
+            <span>
               {readingTime(post)} {t('post.minRead')}
             </span>
           </div>
           <div class="row__body">
-            <h2>{post.data.title}</h2>
+            <div class="row__title-row">
+              <h2>{post.data.title}</h2>
+              <Badge>{categoryLabel(post.data.category)}</Badge>
+            </div>
             <p class="row__excerpt">{post.data.description}</p>
           </div>
-          <span class="row__arrow" aria-hidden="true">↗</span>
+          <img class="row__arrow" src="/icons/arrow-right.svg" width="20" height="20" alt="" aria-hidden="true" />
         </a>
       ))
     }
+    <p class="list__empty meta" data-list-empty hidden>{t('archive.empty')}</p>
   </section>
 
   <section class="subscribe-band container">
     <div class="subscribe-band__inner">
       <div>
         <h2>{t('archive.band.title')}</h2>
-        <p class="meta">{t('archive.band.body')}</p>
+        <p class="subscribe-band__body">{t('archive.band.body')}</p>
       </div>
       <SubscribeForm id="assinar-arquivo" compact />
     </div>
   </section>
 </Base>
 
+<script>
+  const filter = document.querySelector('[data-category-filter]');
+  const empty = document.querySelector('[data-list-empty]');
+  if (filter instanceof HTMLSelectElement) {
+    const rows = Array.from(document.querySelectorAll<HTMLElement>('.row[data-category]'));
+    const apply = () => {
+      let visible = 0;
+      for (const row of rows) {
+        const match = !filter.value || row.dataset.category === filter.value;
+        row.hidden = !match;
+        if (match) visible += 1;
+      }
+      if (empty instanceof HTMLElement) empty.hidden = visible > 0;
+    };
+    filter.addEventListener('change', apply);
+    apply();
+  }
+</script>
+
 <style>
   .head {
-    padding-block: var(--space-24) var(--space-10);
+    padding-block: var(--space-16) var(--space-10);
     display: flex;
     flex-direction: column;
     gap: var(--space-4);
   }
 
   .head h1 {
-    font: 600 clamp(34px, 4.5vw, 48px) / 1.1 var(--font-sans);
-    letter-spacing: -0.025em;
+    font: 600 clamp(34px, 4.5vw, 44px) / 1.12 var(--font-serif);
+    letter-spacing: -0.015em;
   }
 
   .head__sub {
+    font: 400 16px/1.6 var(--font-sans);
     color: var(--muted-foreground);
     max-width: 640px;
+  }
+
+  .filters {
+    padding-block: var(--space-2) var(--space-4);
+  }
+
+  .select {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  .select select {
+    appearance: none;
+    height: 39px;
+    padding: var(--space-2) 36px var(--space-2) var(--space-3);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-md);
+    background: var(--card);
+    color: var(--foreground);
+    font: 400 14px/1.5 var(--font-sans);
+    cursor: pointer;
+  }
+
+  .select__icon {
+    position: absolute;
+    right: var(--space-3);
+    pointer-events: none;
   }
 
   .list {
     display: flex;
     flex-direction: column;
-    padding-bottom: var(--space-12);
+    padding-block: var(--space-4) var(--space-6);
   }
 
   .row {
     display: grid;
     grid-template-columns: 1fr;
     gap: var(--space-2);
-    padding-block: var(--space-6);
-    border-top: 1px solid var(--border);
+    padding-block: var(--space-4);
+    border-bottom: 1px solid var(--border);
     text-decoration: none;
     transition: background 0.15s ease;
-  }
-
-  .row:last-child {
-    border-bottom: 1px solid var(--border);
   }
 
   .row:hover {
     background: var(--muted);
   }
 
-  .row__meta {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: var(--space-2) var(--space-3);
+  .row[hidden] {
+    display: none;
   }
 
-  .row__reading {
-    flex-basis: 100%;
+  .row__meta {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+    font: 400 13px/1.4 var(--font-sans);
+    color: var(--muted-foreground);
   }
 
   .row__body {
@@ -111,20 +166,26 @@ const posts = await getPosts();
     gap: var(--space-2);
   }
 
+  .row__title-row {
+    display: flex;
+    align-items: baseline;
+    gap: var(--space-3);
+  }
+
   .row h2 {
-    font: 600 20px/1.35 var(--font-sans);
-    letter-spacing: -0.01em;
+    min-width: 0;
+    font: 600 21px/1.3 var(--font-serif);
+    letter-spacing: -0.005em;
   }
 
   .row__excerpt {
     font: 400 14px/1.5 var(--font-sans);
     color: var(--muted-foreground);
-    max-width: 720px;
+    max-width: 700px;
   }
 
   .row__arrow {
     display: none;
-    color: var(--muted-foreground);
   }
 
   .subscribe-band {
@@ -143,20 +204,28 @@ const posts = await getPosts();
   }
 
   .subscribe-band__inner h2 {
-    font: 600 26px/1.25 var(--font-sans);
-    letter-spacing: -0.015em;
-    margin-bottom: var(--space-2);
+    font: 600 28px/1.22 var(--font-serif);
+    letter-spacing: -0.01em;
+    margin-bottom: var(--space-1);
+  }
+
+  .subscribe-band__body {
+    font: 400 14px/1.5 var(--font-sans);
+    color: var(--muted-foreground);
   }
 
   @media (min-width: 768px) {
     .row {
-      grid-template-columns: 200px 1fr 24px;
+      grid-template-columns: 150px minmax(0, 1fr) 20px;
       align-items: center;
       gap: var(--space-8);
+      min-height: 56px;
+      padding-block: 0;
     }
 
     .row__arrow {
-      display: inline;
+      display: block;
+      justify-self: end;
     }
 
     .subscribe-band__inner {

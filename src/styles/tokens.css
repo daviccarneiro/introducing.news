@@ -68,13 +68,14 @@
   --radius-full: 9999px;
 
   /* Layout */
-  --container: 1200px;
+  --container: 1440px;
   --reading: 720px;
 
   /* Tipografia */
-  --font-sans: 'Inter', system-ui, -apple-system, sans-serif;
+  --font-sans: 'Geist', system-ui, -apple-system, sans-serif;
   --font-serif: 'Source Serif 4', Georgia, 'Times New Roman', serif;
   --font-mono: 'JetBrains Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  --font-code: 'Geist Mono', ui-monospace, 'SFMono-Regular', Menlo, monospace;
 
   /* Sombras */
   --shadow-xs: 0 1px 2px rgb(9 9 11 / 0.05);

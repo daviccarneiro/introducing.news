@@ -24,15 +24,18 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
   novalidate
 >
   <div class="subscribe__row">
-    <label class="visually-hidden" for={inputId}>{t('form.placeholder')}</label>
-    <input
-      type="email"
-      name="email"
-      id={inputId}
-      placeholder={t('form.placeholder')}
-      autocomplete="email"
-      required
-    />
+    <div class="subscribe__field">
+      <img class="subscribe__icon" src="/icons/mail.svg" width="18" height="18" alt="" aria-hidden="true" />
+      <label class="visually-hidden" for={inputId}>{t('form.placeholder')}</label>
+      <input
+        type="email"
+        name="email"
+        id={inputId}
+        placeholder={t('form.placeholder')}
+        autocomplete="email"
+        required
+      />
+    </div>
     <button type="submit">{t('form.button')}</button>
   </div>
 
@@ -43,7 +46,13 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 
   {
     turnstileSiteKey && (
-      <div class="cf-turnstile" data-sitekey={turnstileSiteKey} data-theme="light" data-language="pt-BR" />
+      <div
+        class="cf-turnstile"
+        data-sitekey={turnstileSiteKey}
+        data-theme="light"
+        data-language="pt-BR"
+        data-size="flexible"
+      />
     )
   }
 
@@ -54,7 +63,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
   .subscribe {
     display: flex;
     flex-direction: column;
-    gap: var(--space-3);
+    gap: var(--space-4);
     scroll-margin-top: var(--space-16);
   }
 
@@ -63,13 +72,30 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     gap: var(--space-3);
     flex-wrap: wrap;
     align-items: center;
+    margin-bottom: var(--space-2);
+  }
+
+  .subscribe__field {
+    position: relative;
+    display: flex;
+    align-items: center;
+    flex: 1 1 240px;
+    max-width: 320px;
+    min-width: 0;
+  }
+
+  .subscribe__icon {
+    position: absolute;
+    left: var(--space-3);
+    pointer-events: none;
   }
 
   input[type='email'] {
-    flex: 1 1 220px;
+    width: 100%;
     min-width: 0;
-    height: 48px;
-    padding-inline: var(--space-3);
+    height: 44px;
+    padding-left: calc(var(--space-3) + 18px + var(--space-2));
+    padding-right: var(--space-3);
     border: 1px solid var(--border);
     border-radius: var(--radius-md);
     background: var(--card);
@@ -91,17 +117,16 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     padding-inline: var(--space-5);
     border: 0;
     border-radius: var(--radius-md);
-    background: var(--primary);
-    color: var(--primary-foreground);
-    font: 500 15px/1 var(--font-sans);
-    cursor: not-allowed;
+    background: var(--ink-200);
+    color: var(--ink-600);
+    font: 500 15px/1.4 var(--font-sans);
+    cursor: pointer;
     transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
   }
 
   .subscribe[data-ready] button {
     background: var(--accent);
     color: var(--accent-foreground);
-    cursor: pointer;
   }
 
   .subscribe[data-ready] button:hover {
@@ -122,12 +147,24 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     font: 400 13px/1.45 var(--font-sans);
     color: var(--muted-foreground);
     cursor: pointer;
-    max-width: 460px;
+    max-width: 560px;
   }
 
-  .consent input {
-    margin-top: 2px;
-    accent-color: var(--accent-600);
+  .consent input[type='checkbox'] {
+    appearance: none;
+    flex: none;
+    width: 16px;
+    height: 16px;
+    margin: 1px 0 0;
+    border: 1.5px solid var(--border-strong);
+    border-radius: var(--radius-xs);
+    background: var(--card);
+    cursor: pointer;
+  }
+
+  .consent input[type='checkbox']:checked {
+    border-color: var(--accent);
+    background: var(--accent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath d='M4 8.5 7 11.5 12 5' fill='none' stroke='%230B0B0C' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/12px no-repeat;
   }
 
   .subscribe__status[data-state='ok'] {
@@ -135,32 +172,47 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
   }
 
   .subscribe__status[data-state='error'] {
-    color: #b42318;
+    color: var(--accent-700);
   }
 
   .subscribe--compact {
     width: 100%;
-    max-width: 460px;
+    max-width: 360px;
+  }
+
+  .subscribe--compact .subscribe__field {
+    max-width: 260px;
+  }
+
+  .subscribe--compact button {
+    height: 40px;
+    padding-inline: var(--space-4);
+    font-size: 14px;
   }
 </style>
 
 <script>
+  const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
   document.querySelectorAll('[data-subscribe]').forEach((form) => {
     if (!(form instanceof HTMLFormElement)) return;
 
-    const consent = form.querySelector('input[name="consent"]');
+    const input = form.querySelector('input[type="email"]');
     const syncButtonState = () => {
-      if (consent instanceof HTMLInputElement && consent.checked) form.dataset.ready = 'true';
-      else delete form.dataset.ready;
+      if (input instanceof HTMLInputElement && isValidEmail(input.value.trim())) {
+        form.dataset.ready = 'true';
+      } else {
+        delete form.dataset.ready;
+      }
     };
-    consent?.addEventListener('change', syncButtonState);
+    input?.addEventListener('input', syncButtonState);
     syncButtonState();
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
       const status = form.querySelector('.subscribe__status');
       const button = form.querySelector('button');
-      const input = form.querySelector('input[type="email"]');
+      const consent = form.querySelector('input[name="consent"]');
       const turnstileInput = form.querySelector('[name="cf-turnstile-response"]');
       if (
         !(status instanceof HTMLElement) ||
@@ -180,7 +232,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
       };
 
       const email = input.value.trim();
-      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      if (!isValidEmail(email)) {
         status.textContent = messages.invalid;
         status.dataset.state = 'error';
         status.hidden = false;

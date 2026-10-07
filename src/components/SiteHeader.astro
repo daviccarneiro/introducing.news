@@ -1,27 +1,20 @@
 ---
 import { t } from '../copy';
-
-const nav = [{ label: t('nav.list'), href: '/arquivo/' }];
 ---
 
 <header class="header">
   <div class="container header__inner">
     <a class="logo" href="/" aria-label="introducing.news">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-        <path
-          d="M12 2 C 13.2 8.4 15.6 10.8 22 12 C 15.6 13.2 13.2 15.6 12 22 C 10.8 15.6 8.4 13.2 2 12 C 8.4 10.8 10.8 8.4 12 2 Z"
-          stroke="#F6821F"
-          stroke-width="2"
-          stroke-linejoin="round"></path>
-      </svg>
+      <img src="/icons/sparkle.svg" width="20" height="20" alt="" aria-hidden="true" />
       <span class="logo__mark">introducing<span class="logo__tld">.news</span></span>
     </a>
 
-    <nav class="nav" aria-label={t('nav.list')}>
-      {nav.map((item) => <a href={item.href}>{item.label}</a>)}
-    </nav>
-
-    <a class="button" href="/#assinar">{t('nav.subscribe')}</a>
+    <div class="header__actions">
+      <a class="button" href="/#assinar">{t('nav.subscribe')}</a>
+      <nav class="nav" aria-label={t('nav.list')}>
+        <a href="/arquivo/">{t('nav.list')}</a>
+      </nav>
+    </div>
   </div>
 </header>
 
@@ -47,7 +40,7 @@ const nav = [{ label: t('nav.list'), href: '/arquivo/' }];
   }
 
   .logo__mark {
-    font: 600 18px/1 var(--font-sans);
+    font: 600 18px/1 'Inter', var(--font-sans);
     letter-spacing: -0.01em;
   }
 
@@ -55,9 +48,14 @@ const nav = [{ label: t('nav.list'), href: '/arquivo/' }];
     color: var(--muted-foreground);
   }
 
+  .header__actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-5);
+  }
+
   .nav {
     display: none;
-    gap: var(--space-8);
   }
 
   .nav a {
@@ -77,15 +75,20 @@ const nav = [{ label: t('nav.list'), href: '/arquivo/' }];
     height: 40px;
     padding-inline: var(--space-4);
     border-radius: var(--radius-md);
-    background: var(--primary);
-    color: var(--primary-foreground);
-    font: 500 14px/1 var(--font-sans);
+    background: var(--accent);
+    color: var(--accent-foreground);
+    font: 500 14px/1.4 var(--font-sans);
     text-decoration: none;
+    transition: background 0.15s ease;
+  }
+
+  .button:hover {
+    background: var(--accent-600);
   }
 
   @media (min-width: 768px) {
     .nav {
-      display: flex;
+      display: block;
     }
   }
 </style>

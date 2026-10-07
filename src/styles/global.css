@@ -76,18 +76,15 @@ input {
   }
 }
 
-/* Rótulo mono em caixa alta (Label/Mono no Figma) */
-.eyebrow {
-  font: 500 11px/1.2 var(--font-mono);
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--accent-soft-foreground);
+@media (min-width: 1280px) {
+  .container {
+    padding-inline: var(--space-32);
+  }
 }
 
-/* Metadados (Meta/Mono no Figma) */
+/* Metadados (Meta/Sans no Figma) */
 .meta {
-  font: 400 13px/1.4 var(--font-mono);
-  letter-spacing: 0.01em;
+  font: 400 13px/1.4 var(--font-sans);
   color: var(--muted-foreground);
 }
 
@@ -102,9 +99,15 @@ input {
 }
 
 .prose h2 {
-  font: 600 26px/1.25 var(--font-sans);
-  letter-spacing: -0.015em;
+  font: 600 28px/1.22 var(--font-serif);
+  letter-spacing: -0.01em;
   margin: 2em 0 0.6em;
+}
+
+.prose h3 {
+  font: 600 21px/1.3 var(--font-serif);
+  letter-spacing: -0.005em;
+  margin: 1.6em 0 0.5em;
 }
 
 .prose blockquote {
@@ -112,10 +115,11 @@ input {
   padding-left: var(--space-6);
   margin: 2em 0;
   font: italic 400 24px/1.5 var(--font-serif);
+  letter-spacing: -0.005em;
 }
 
 .prose code {
-  font: 400 0.875em/1.7 var(--font-mono);
+  font: 400 0.875em/1.7 var(--font-code);
   background: var(--muted);
   padding: 0.15em 0.35em;
   border-radius: var(--radius-xs);
@@ -127,7 +131,7 @@ input {
   padding: var(--space-6);
   border-radius: var(--radius-md);
   overflow-x: auto;
-  font: 400 14px/1.7 var(--font-mono);
+  font: 400 14px/1.7 var(--font-code);
   margin-block: 1.5em;
 }
 

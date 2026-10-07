@@ -23,6 +23,7 @@ Design: arquivo `introducing.news — Design` no Figma. Os tokens (cores, tipogr
 src/
   copy.ts                  # todo o texto da interface, com t()
   content/posts/*.mdx      # as edições
+  content/authors/*.json   # autores (assinatura do e-mail)
   views/                   # HomeView, ArchiveView, PostView, rss
   pages/
     index.astro            # home (com o formulário de inscrição)
@@ -30,8 +31,11 @@ src/
     arquivo/[...slug].astro# página da edição
     rss.xml.ts             # feed RSS
     api/subscribe.ts       # inscrição (Resend)
-keystatic.config.ts        # CMS (coleção "Edições")
+keystatic.config.ts        # CMS (coleções "Edições" e "Autores")
+scripts/email-template.mjs # template do e-mail (fonte de verdade)
 scripts/send-newsletter.mjs# disparo do Broadcast via Resend
+scripts/resend-template.mjs# sincroniza o template com o Resend
+scripts/publish-batch.mjs  # publica no site as edições programadas vencidas
 wrangler.jsonc             # configuração do Worker
 ```
 
@@ -47,7 +51,7 @@ doppler run -- npm run dev
 npm run dev
 ```
 
-O CMS fica em `http://127.0.0.1:4321/keystatic` (modo local: salva direto em `src/content/posts/`).
+O CMS fica em `http://127.0.0.1:4321/keystatic` (modo local: salva direto em `src/content/posts/` e `src/content/authors/`).
 
 ```bash
 npm run check    # typecheck
@@ -66,20 +70,28 @@ Nunca commite valores. O repositório é público.
 - **Runtime do Worker** (produção): `npx wrangler secret put RESEND_API_KEY`, `RESEND_SEGMENT_ID`, `KEYSTATIC_GITHUB_CLIENT_ID`, `KEYSTATIC_GITHUB_CLIENT_SECRET`, `KEYSTATIC_SECRET`, `TURNSTILE_SECRET_KEY`.
   Depois de definir/alterar segredos manualmente, rode `npx wrangler deploy` novamente — o `secret put` sozinho publica uma versão sem a configuração de assets gerada pelo adapter.
 
-No Resend, a audiência fica em um **segmento único** e cada contato recebe as propriedades `locale` e `consent_at`. O formulário exige **consentimento explícito** (checkbox) e passa pelo **Cloudflare Turnstile** (anti-bot) antes de inscrever o contato.
+No Resend, a audiência fica em um **segmento único** e cada contato recebe as propriedades `locale` e `consent_at`. O formulário pede e-mail e consentimento explícito (checkbox) e passa pelo **Cloudflare Turnstile** (anti-bot) antes de inscrever o contato.
+
+## Fluxo editorial
+
+Cada edição tem um status no CMS: **Rascunho → Em revisão → Programada → Publicada**. Só "Publicada" aparece no site e no RSS.
+
+Uma edição "Programada" entra no próximo **batch**: escolha a data no campo "Data de publicação" (segunda ou quinta) e o workflow **Publicar batch** publica no dia do batch (segundas e quintas, 09:00 BRT) e dispara o deploy. O workflow também é acionado quando o CMS salva uma edição, mas só executa a publicação se existir edição programada, vencida e com conteúdo completo (`title`, `description`, `signature` e data) — caso contrário, nada roda.
 
 ## Enviar uma edição por e-mail
 
-1. Publique a edição (no CMS ou criando o `.mdx` em `src/content/posts/`) e faça push.
+1. Deixe a edição com status **Publicada** (no CMS ou no `.mdx`), escolha em **Assinatura do e-mail** o autor que assina o envio (coleção **Autores**, com nome, cargo e foto) e faça push.
 2. Rode o workflow **Newsletter** no GitHub (Actions → Newsletter → Run workflow) informando o slug.
    - Localmente: `doppler run -- node scripts/send-newsletter.mjs <slug>` (use `--dry-run` para simular).
 3. O script é idempotente: não envia a mesma edição duas vezes (nome `edição-<slug>`).
+
+O e-mail é curto (título + resumo + botão + assinatura) e leva para a edição completa no site. O HTML vem de `scripts/email-template.mjs`; para pré-visualizar no painel do Resend, rode `npm run template:sync` (o envio sempre usa o HTML do repositório).
 
 O Resend gerencia o link de descadastro automaticamente em cada Broadcast.
 
 ## CMS em produção (Keystatic · modo GitHub) — opcional
 
-Para editar pela web em `https://introducing.news/keystatic`:
+Para editar pela web em `https://introducing.news/keystatic` (atalho: `https://cms.introducing.news` redireciona para lá):
 
 1. Crie um **GitHub App** (Settings → Developer settings → GitHub Apps → New):
    - Homepage URL: `https://introducing.news`

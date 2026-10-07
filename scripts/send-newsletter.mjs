@@ -5,7 +5,8 @@
  * Uso: node scripts/send-newsletter.mjs <slug> [--dry-run]
  *
  * O HTML/texto vêm de `email-template.mjs` (fonte de verdade do e-mail) e a
- * assinatura, de `src/content/authors/davi-carneiro.json`.
+ * assinatura, do campo `signature` do frontmatter, que aponta para um autor
+ * em `src/content/authors/`.
  *
  * Requer: RESEND_API_KEY + RESEND_SEGMENT_ID (opcionais: NEWSLETTER_FROM, SITE_URL).
  *
@@ -56,15 +57,20 @@ const api = async (path, options = {}) => {
   return body;
 };
 
-async function loadAuthor() {
+async function loadAuthor(signature) {
+  if (!signature) {
+    console.error('✖ Frontmatter sem "signature": escolha a assinatura no CMS (coleção Autores).');
+    process.exit(1);
+  }
   try {
-    const raw = await readFile(new URL('davi-carneiro.json', AUTHORS_DIR), 'utf8');
+    const raw = await readFile(new URL(`${signature}.json`, AUTHORS_DIR), 'utf8');
     const author = JSON.parse(raw);
     if (author?.name) return { name: author.name, role: author.role ?? '', photo: author.photo };
   } catch {
-    /* usa o fallback abaixo */
+    /* cai no erro abaixo */
   }
-  return { name: 'Davi Carneiro', role: '' };
+  console.error(`✖ Autor "${signature}" não encontrado (ou sem nome) em src/content/authors/.`);
+  process.exit(1);
 }
 
 const file = new URL(`${slug}.mdx`, POSTS_DIR);
@@ -77,8 +83,8 @@ try {
 }
 
 const { data } = matter(raw);
-if (data.draft === true) {
-  console.error('✖ Esta edição está marcada como rascunho (draft: true). Publique antes de enviar.');
+if (data.status !== 'published') {
+  console.error(`✖ Status "${data.status ?? 'draft'}" — só edições publicadas podem ser enviadas.`);
   process.exit(1);
 }
 if (!data.title || !data.description) {
@@ -86,10 +92,22 @@ if (!data.title || !data.description) {
   process.exit(1);
 }
 
+const author = await loadAuthor(data.signature);
+const url = `${SITE}/arquivo/${slug}/`;
+const { html, text } = buildEmail({ title: data.title, description: data.description, url, site: SITE, author });
+
+const missing = html.match(/\{\{\{(?!RESEND_UNSUBSCRIBE_URL\})[A-Z0-9_]+\}\}\}/g);
+if (missing) {
+  console.error(`✖ Variáveis não preenchidas no e-mail: ${missing.join(', ')}.`);
+  process.exit(1);
+}
+
 const name = `edição-${slug}`;
 
 if (dryRun) {
   console.log(`◌ [dry-run] enviaria "${name}" para o segmento ${SEGMENT_ID ?? 'não configurado'}.`);
+  console.log(`   assunto: ${data.title}`);
+  console.log(`   assinatura: ${author.name}${author.role ? ` — ${author.role}` : ''}`);
   process.exit(0);
 }
 
@@ -98,16 +116,6 @@ if ((existing.data ?? []).some((broadcast) => broadcast.name === name)) {
   console.log(`✔ Broadcast "${name}" já existe — nada a fazer (anti-duplicidade).`);
   process.exit(0);
 }
-
-const author = await loadAuthor();
-const url = `${SITE}/arquivo/${slug}/`;
-const { html, text } = buildEmail({
-  title: data.title,
-  description: data.description,
-  url,
-  site: SITE,
-  author,
-});
 
 const broadcast = await api('/broadcasts', {
   method: 'POST',

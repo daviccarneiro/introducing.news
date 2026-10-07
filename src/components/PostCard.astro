@@ -18,15 +18,18 @@ const href = `/arquivo/${post.id}/`;
     <Cover variant={cover} src={post.data.coverImage} />
   </a>
   <div class="card__body">
-    <div class="card__meta">
-      <Badge tone="accent">{categoryLabel(post.data.category)}</Badge>
-      <time class="meta" datetime={post.data.publishedAt.toISOString()}>
-        {formatDate(post.data.publishedAt)}
-      </time>
+    <p class="card__date meta">
+      <time datetime={post.data.publishedAt.toISOString()}>{formatDate(post.data.publishedAt)}</time>
+    </p>
+    <div class="card__title-row">
+      <h3 class="card__title"><a href={href}>{post.data.title}</a></h3>
+      <Badge>{categoryLabel(post.data.category)}</Badge>
     </div>
-    <h3 class="card__title"><a href={href}>{post.data.title}</a></h3>
     <p class="card__excerpt">{post.data.description}</p>
-    <p class="card__foot meta">{readingTime(post)} {t('post.minRead')}</p>
+    <p class="card__foot">
+      <img src="/icons/clock.svg" width="14" height="14" alt="" aria-hidden="true" />
+      {readingTime(post)} {t('post.minRead')}
+    </p>
   </div>
 </article>
 
@@ -48,7 +51,6 @@ const href = `/arquivo/${post.id}/`;
 
   .card__cover {
     display: block;
-    border-bottom: 1px solid var(--border);
   }
 
   .card__body {
@@ -58,16 +60,16 @@ const href = `/arquivo/${post.id}/`;
     padding: var(--space-5);
   }
 
-  .card__meta {
+  .card__title-row {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-3);
+    align-items: baseline;
+    gap: var(--space-2);
   }
 
   .card__title {
-    font: 600 20px/1.35 var(--font-sans);
-    letter-spacing: -0.01em;
+    min-width: 0;
+    font: 600 21px/1.3 var(--font-serif);
+    letter-spacing: -0.005em;
   }
 
   .card__title a {
@@ -84,6 +86,11 @@ const href = `/arquivo/${post.id}/`;
   }
 
   .card__foot {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font: 400 13px/1.45 var(--font-sans);
+    color: var(--muted-foreground);
     margin-top: auto;
   }
 </style>

@@ -1,10 +1,28 @@
-import { getCollection, type CollectionEntry } from 'astro:content';
+import { getCollection, getEntry, type CollectionEntry } from 'astro:content';
 
 export type Post = CollectionEntry<'posts'>;
+export type Author = CollectionEntry<'authors'>;
 
-export async function getPosts({ includeDrafts = false } = {}): Promise<Post[]> {
-  const posts = await getCollection('posts', ({ data }) => includeDrafts || !data.draft);
+export async function getPosts(): Promise<Post[]> {
+  const posts = await getCollection('posts', ({ data }) => data.status === 'published');
   return posts.sort((a, b) => b.data.publishedAt.valueOf() - a.data.publishedAt.valueOf());
+}
+
+/** Autor que assina a edição, quando cadastrado (`signature` no frontmatter). */
+export async function getAuthor(post: Post): Promise<Author | null> {
+  const slug = post.data.signature;
+  if (!slug) return null;
+  return (await getEntry('authors', slug)) ?? null;
+}
+
+/** Iniciais para o avatar sem foto (ex.: "Davi Carneiro" → "DC"). */
+export function initialsOf(name: string): string {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join('');
 }
 
 export function readingTime(post: Post): number {

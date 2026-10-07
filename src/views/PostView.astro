@@ -6,7 +6,7 @@ import Cover from '../components/Cover.astro';
 import PostCard from '../components/PostCard.astro';
 import SubscribeForm from '../components/SubscribeForm.astro';
 import { categoryLabel, t } from '../copy';
-import { formatDate, getPosts, readingTime, type Post } from '../lib/posts';
+import { getAuthor, getPosts, initialsOf, readingTime, type Post } from '../lib/posts';
 
 interface Props {
   post: Post;
@@ -17,56 +17,77 @@ const { Content } = await render(post);
 const related = (await getPosts()).filter((entry) => entry.id !== post.id).slice(0, 2);
 const postUrl = new URL(`/arquivo/${post.id}/`, Astro.site ?? Astro.url).href;
 const linkedinShare = `https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(postUrl)}`;
+const whatsappShare = `https://wa.me/?text=${encodeURIComponent(`${post.data.title} ${postUrl}`)}`;
+const xShare = `https://twitter.com/intent/tweet?url=${encodeURIComponent(postUrl)}&text=${encodeURIComponent(post.data.title)}`;
+const author = await getAuthor(post);
 ---
 
 <Base title={`${post.data.title} — introducing.news`} description={post.data.description} type="article">
   <article>
     <header class="post-head container">
-      <a class="post-head__back meta" href="/arquivo/">{t('post.back')}</a>
-      <div class="post-head__meta">
-        <Badge tone="accent">{categoryLabel(post.data.category)}</Badge>
-        <span class="meta">{formatDate(post.data.publishedAt)}</span>
-      </div>
-      <h1>{post.data.title}</h1>
-      <p class="post-head__lead">{post.data.description}</p>
-      <div class="post-head__author">
-        <span class="avatar" aria-hidden="true">DC</span>
-        <div>
-          <p class="post-head__name">Davi Carneiro</p>
-          <p class="meta">{readingTime(post)} {t('post.minRead')}</p>
+      <div class="post-head__inner">
+        <a class="post-head__back" href="/arquivo/">{t('post.back')}</a>
+        <div class="post-head__title">
+          <h1>{post.data.title}</h1><span class="post-head__tag"
+            ><Badge>{categoryLabel(post.data.category)}</Badge></span
+          >
         </div>
+        <p class="post-head__lead">{post.data.description}</p>
+        {
+          author && (
+            <div class="post-head__author-row">
+              <div class="post-head__author">
+                {author.data.photo ? (
+                  <img
+                    class="avatar avatar--photo"
+                    src={author.data.photo}
+                    alt=""
+                    width="40"
+                    height="40"
+                    loading="lazy"
+                    decoding="async"
+                  />
+                ) : (
+                  <span class="avatar" aria-hidden="true">
+                    {initialsOf(author.data.name)}
+                  </span>
+                )}
+                <p>{author.data.name}, {readingTime(post)} {t('post.minRead')}</p>
+              </div>
+              <div class="post-head__share">
+                <a href={whatsappShare} target="_blank" rel="noopener" aria-label={t('post.share.whatsapp')}>
+                  <img src="/icons/whatsapp.svg" width="18" height="18" alt="" aria-hidden="true" />
+                </a>
+                <a href={linkedinShare} target="_blank" rel="noopener" aria-label={t('post.share.linkedin')}>
+                  <img src="/icons/linkedin-share.svg" width="18" height="18" alt="" aria-hidden="true" />
+                </a>
+                <a href={xShare} target="_blank" rel="noopener" aria-label={t('post.share.x')}>
+                  <img src="/icons/x.svg" width="18" height="18" alt="" aria-hidden="true" />
+                </a>
+              </div>
+            </div>
+          )
+        }
       </div>
     </header>
 
-    <div class="post-cover container">
-      <Cover variant={post.data.cover} src={post.data.coverImage} class="post-cover__art" />
-    </div>
-
-    <div class="post-body container">
-      <div class="prose">
-        <Content />
-      </div>
-
-      <div class="post-share">
-        <p>{t('post.like')}</p>
-        <div class="post-share__actions">
-          <button class="button button--secondary" type="button" data-copy-link data-copied={t('post.copied')}>
-            {t('post.copy')}
-            <span aria-hidden="true">↗</span>
-          </button>
-          <a class="button button--primary" href={linkedinShare} target="_blank" rel="noopener">
-            {t('post.share')}
-            <span aria-hidden="true">in</span>
-          </a>
+    <div class="post-main container">
+      <div class="post-main__inner">
+        <div class="post-cover">
+          <Cover variant={post.data.cover} src={post.data.coverImage} />
         </div>
-      </div>
 
-      <div class="post-subscribe">
-        <div>
-          <h2>{t('post.subscribe.title')}</h2>
-          <p class="meta">{t('post.subscribe.body')}</p>
+        <div class="prose">
+          <Content />
         </div>
-        <SubscribeForm id="assinar-post" compact />
+
+        <div class="post-subscribe">
+          <div class="post-subscribe__text">
+            <h2>{t('post.subscribe.title')}</h2>
+            <p>{t('post.subscribe.body')}</p>
+          </div>
+          <SubscribeForm id="assinar-post" compact />
+        </div>
       </div>
     </div>
   </article>
@@ -85,54 +106,44 @@ const linkedinShare = `https://www.linkedin.com/sharing/share-offsite/?url=${enc
   }
 </Base>
 
-<script>
-  document.querySelectorAll('[data-copy-link]').forEach((button) => {
-    button.addEventListener('click', async () => {
-      if (!(button instanceof HTMLButtonElement)) return;
-      const label = button.firstChild;
-      if (!label) return;
-      const original = label.textContent ?? '';
-      try {
-        await navigator.clipboard.writeText(window.location.href);
-        label.textContent = button.dataset.copied ?? original;
-      } catch {
-        /* clipboard indisponível */
-      }
-      window.setTimeout(() => {
-        label.textContent = original;
-      }, 2000);
-    });
-  });
-</script>
-
 <style>
   .post-head {
+    padding-block: var(--space-16) var(--space-6);
+  }
+
+  .post-head__inner {
     display: flex;
     flex-direction: column;
-    align-items: center;
     gap: var(--space-5);
-    text-align: center;
-    padding-block: var(--space-16) var(--space-12);
+    max-width: var(--reading);
+    margin-inline: auto;
   }
 
   .post-head__back {
     align-self: flex-start;
+    font: 400 14px/1.5 var(--font-sans);
+    color: var(--muted-foreground);
     text-decoration: none;
-    text-transform: uppercase;
   }
 
-  .post-head__meta {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-    flex-wrap: wrap;
-    justify-content: center;
+  .post-head__back:hover {
+    color: var(--foreground);
+  }
+
+  .post-head__title {
+    max-width: 620px;
   }
 
   .post-head h1 {
-    font: 600 clamp(30px, 4vw, 40px) / 1.12 var(--font-sans);
-    letter-spacing: -0.02em;
-    max-width: 720px;
+    display: inline;
+    font: 600 clamp(32px, 4.5vw, 44px) / 1.12 var(--font-serif);
+    letter-spacing: -0.015em;
+  }
+
+  .post-head__tag {
+    display: inline-block;
+    margin-left: var(--space-3);
+    vertical-align: middle;
   }
 
   .post-head__lead {
@@ -141,15 +152,29 @@ const linkedinShare = `https://www.linkedin.com/sharing/share-offsite/?url=${enc
     max-width: 640px;
   }
 
+  .post-head__author-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    min-height: 40px;
+  }
+
   .post-head__author {
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    text-align: left;
   }
 
-  .post-head__name {
-    font: 500 17px/1.4 var(--font-sans);
+  .post-head__author p {
+    font: 400 14px/1.5 var(--font-sans);
+    color: var(--muted-foreground);
+  }
+
+  .post-head__share {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
   }
 
   .avatar {
@@ -165,51 +190,28 @@ const linkedinShare = `https://www.linkedin.com/sharing/share-offsite/?url=${enc
     letter-spacing: 0.06em;
   }
 
-  .post-cover {
-    margin-bottom: var(--space-16);
+  .avatar--photo {
+    object-fit: cover;
   }
 
-  .post-cover__art {
-    border-radius: var(--radius-xl);
+  .post-main {
+    padding-block: var(--space-6) var(--space-10);
+  }
+
+  .post-main__inner {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-6);
+    max-width: var(--reading);
+    margin-inline: auto;
+  }
+
+  .post-cover {
+    border-radius: var(--radius-lg);
     overflow: hidden;
   }
 
-  .post-body {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-12);
-  }
-
-  .post-body .prose {
-    width: 100%;
-    max-width: var(--reading);
-  }
-
-  .post-share {
-    width: 100%;
-    max-width: var(--reading);
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--space-4);
-    border-top: 1px solid var(--border);
-    padding-top: var(--space-8);
-  }
-
-  .post-share p {
-    font: 500 17px/1.4 var(--font-sans);
-  }
-
-  .post-share__actions {
-    display: flex;
-    gap: var(--space-3);
-  }
-
   .post-subscribe {
-    width: 100%;
-    max-width: var(--reading);
     display: flex;
     flex-direction: column;
     gap: var(--space-6);
@@ -218,44 +220,29 @@ const linkedinShare = `https://www.linkedin.com/sharing/share-offsite/?url=${enc
     padding: var(--space-8);
   }
 
+  .post-subscribe__text {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-1);
+  }
+
   .post-subscribe h2 {
-    font: 600 20px/1.35 var(--font-sans);
-    letter-spacing: -0.01em;
-    margin-bottom: var(--space-1);
+    font: 600 21px/1.3 var(--font-serif);
+    letter-spacing: -0.005em;
   }
 
-  .button {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-    height: 40px;
-    padding-inline: var(--space-4);
-    border-radius: var(--radius-md);
-    font: 500 14px/1 var(--font-sans);
-    text-decoration: none;
-    cursor: pointer;
-  }
-
-  .button--primary {
-    background: var(--primary);
-    color: var(--primary-foreground);
-    border: 0;
-  }
-
-  .button--secondary {
-    background: var(--card);
-    color: var(--foreground);
-    border: 1px solid var(--border);
+  .post-subscribe p {
+    font: 400 14px/1.5 var(--font-sans);
+    color: var(--muted-foreground);
   }
 
   .continue {
-    padding-block: var(--space-16) var(--space-20);
+    padding-block: var(--space-10) var(--space-6);
   }
 
   .continue h2 {
-    font: 600 26px/1.25 var(--font-sans);
-    letter-spacing: -0.015em;
+    font: 600 28px/1.22 var(--font-serif);
+    letter-spacing: -0.01em;
     margin-bottom: var(--space-6);
   }
 
@@ -263,6 +250,10 @@ const linkedinShare = `https://www.linkedin.com/sharing/share-offsite/?url=${enc
     display: grid;
     gap: var(--space-6);
     grid-template-columns: 1fr;
+  }
+
+  .continue__grid > :global(.card) {
+    max-width: 384px;
   }
 
   @media (min-width: 768px) {
