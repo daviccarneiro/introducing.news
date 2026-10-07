@@ -11,9 +11,12 @@
  * Apple Mail, Outlook (com fallback VML no botão) e demais clientes.
  * Cores e tipografia espelham `src/styles/tokens.css`.
  */
-const SANS = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
-const SERIF = "Georgia, 'Times New Roman', Times, serif";
-const MONO = "ui-monospace, SFMono-Regular, Menlo, Consolas, 'Courier New', monospace";
+export const SANS = "'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif";
+export const SERIF = "'Source Serif 4', Georgia, 'Times New Roman', Times, serif";
+export const MONO = "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, 'Courier New', monospace";
+
+/** Logo em PNG (clientes de e-mail não renderizam SVG); servido de `public/`. */
+const LOGO = '{{{SITE_URL}}}/images/brand/sparkle.png';
 
 export const TEMPLATE_NAME = 'introducing.news — nova edição';
 export const TEMPLATE_ALIAS = 'introducing-news-nova-edicao';
@@ -48,11 +51,15 @@ export const templateHtml = `<!doctype html>
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" bgcolor="#FFFFFF" style="width:100%;max-width:560px;background-color:#FFFFFF;border:1px solid #E4E4E9;border-radius:16px;">
 <tr>
 <td style="padding:40px 40px 0 40px;font-family:${SANS};">
-<p style="margin:0 0 4px 0;font-family:${SANS};font-size:17px;font-weight:600;line-height:1.3;letter-spacing:-0.01em;color:#0B0B0C;">introducing<span style="color:#6B6B76;">.news</span></p>
-<p style="margin:0 0 28px 0;font-family:${SANS};font-size:13px;line-height:1.5;color:#9A9AA4;">{{{TAGLINE}}}</p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
+<td width="24" valign="middle" style="width:24px;padding:0 8px 0 0;"><img src="${LOGO}" width="24" height="24" alt="" style="display:block;width:24px;height:24px;border:0;outline:none;text-decoration:none;" /></td>
+<td valign="middle" style="font-family:'Inter',${SANS};font-size:18px;font-weight:600;line-height:1.2;letter-spacing:-0.01em;color:#0B0B0C;">introducing<span style="color:#6B6B76;">.news</span></td>
+</tr></table>
+<p style="margin:8px 0 28px 0;font-family:${SANS};font-size:13px;line-height:1.5;color:#9A9AA4;">{{{TAGLINE}}}</p>
 <p style="margin:0 0 12px 0;font-family:${MONO};font-size:11px;font-weight:500;line-height:1.4;letter-spacing:0.08em;text-transform:uppercase;color:#A63E0A;">{{{KICKER}}}</p>
-<h1 style="margin:0 0 16px 0;font-family:${SANS};font-size:26px;font-weight:600;line-height:1.25;letter-spacing:-0.02em;color:#0B0B0C;">{{{TITLE}}}</h1>
-<p style="margin:0 0 28px 0;font-family:${SERIF};font-size:17px;line-height:1.6;color:#4B4B55;">{{{DESCRIPTION}}}</p>
+<h1 style="margin:0 0 16px 0;font-family:${SERIF};font-size:27px;font-weight:600;line-height:1.22;letter-spacing:-0.015em;color:#0B0B0C;">{{{TITLE}}}</h1>
+<p style="margin:0 0 28px 0;font-family:${SERIF};font-size:18px;line-height:1.65;color:#6B6B76;">{{{DESCRIPTION}}}</p>
+{{{BODY}}}
 <!--[if mso]>
 <v:roundrect xmlns:v="urn:schemas-microsoft-com:vml" xmlns:w="urn:schemas-microsoft-com:office:word" href="{{{CTA_URL}}}" style="height:44px;v-text-anchor:middle;width:240px;" arcsize="18%" stroke="f" fillcolor="#F6821F">
 <w:anchorlock/>
@@ -87,6 +94,10 @@ export const templateHtml = `<!doctype html>
 </tr>
 <tr>
 <td style="padding:32px 40px 40px 40px;font-family:${SANS};">
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 16px 0;"><tr>
+<td width="16" valign="middle" style="width:16px;padding:0 6px 0 0;"><img src="${LOGO}" width="16" height="16" alt="" style="display:block;width:16px;height:16px;border:0;outline:none;text-decoration:none;" /></td>
+<td valign="middle" style="font-family:'Inter',${SANS};font-size:13px;font-weight:600;line-height:1.2;letter-spacing:-0.01em;color:#6B6B76;">introducing<span style="color:#9A9AA4;">.news</span></td>
+</tr></table>
 <p style="margin:0 0 12px 0;font-family:${SANS};font-size:12px;line-height:1.6;color:#9A9AA4;">{{{FOOT_MESSAGE}}}</p>
 <p style="margin:0;font-family:${MONO};font-size:12px;line-height:1.6;color:#9A9AA4;"><a href="{{{SITE_URL}}}" style="color:#6B6B76;text-decoration:none;">introducing.news</a><span style="color:#C9C9D1;">&nbsp;·&nbsp;</span><a href="{{{UNSUBSCRIBE_URL}}}" style="color:#6B6B76;text-decoration:none;">{{{UNSUBSCRIBE_LABEL}}}</a></p>
 </td>
@@ -106,8 +117,8 @@ const escapeHtml = (value) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 
-/** Variáveis que recebem HTML já pronto (avatar, linha de cargo, URL de descadastro). */
-const RAW_KEYS = new Set(['SIGNATURE_AVATAR', 'SIGNATURE_ROLE_LINE', 'UNSUBSCRIBE_URL']);
+/** Variáveis que recebem HTML já pronto (avatar, corpo do e-mail, linha de cargo, URL de descadastro). */
+const RAW_KEYS = new Set(['BODY', 'SIGNATURE_AVATAR', 'SIGNATURE_ROLE_LINE', 'UNSUBSCRIBE_URL']);
 
 function initialsOf(name) {
   return name
@@ -123,7 +134,7 @@ function avatarHtml(author, site) {
     const src = /^https?:\/\//.test(author.photo) ? author.photo : `${site}${author.photo}`;
     return `<img src="${escapeHtml(src)}" width="40" height="40" alt="" style="display:block;width:40px;height:40px;border:0;border-radius:9999px;object-fit:cover;" />`;
   }
-  return `<table role="presentation" width="40" height="40" cellpadding="0" cellspacing="0" border="0" style="width:40px;height:40px;background-color:#FDEBD7;border-radius:9999px;"><tr><td align="center" valign="middle" style="font-family:${MONO};font-size:11px;font-weight:500;letter-spacing:0.08em;color:#A63E0A;">${escapeHtml(initialsOf(author.name))}</td></tr></table>`;
+  return `<table role="presentation" width="40" height="40" cellpadding="0" cellspacing="0" border="0" style="width:40px;height:40px;background-color:#FFF6ED;border-radius:9999px;"><tr><td align="center" valign="middle" style="font-family:${MONO};font-size:11px;font-weight:500;letter-spacing:0.08em;color:#A63E0A;">${escapeHtml(initialsOf(author.name))}</td></tr></table>`;
 }
 
 export function renderEmail(values) {
@@ -139,6 +150,7 @@ export function renderText(values) {
     values.TITLE,
     '',
     values.DESCRIPTION,
+    ...(values.BODY_TEXT ? ['', values.BODY_TEXT] : []),
     '',
     `${values.CTA_LABEL}: ${values.CTA_URL}`,
     '',
@@ -150,13 +162,15 @@ export function renderText(values) {
 }
 
 /** Monta HTML e texto do e-mail de uma edição. */
-export function buildEmail({ title, description, url, site, author }) {
+export function buildEmail({ title, description, url, site, author, body = { html: '', text: '' } }) {
   const variables = {
     LANG: COPY.lang,
     TAGLINE: COPY.tagline,
     KICKER: COPY.kicker,
     TITLE: title,
     DESCRIPTION: description,
+    BODY: body.html,
+    BODY_TEXT: body.text,
     CTA_LABEL: COPY.cta,
     CTA_URL: url,
     SIGN_OFF: COPY.signOff,
@@ -180,6 +194,14 @@ const fallbackVariables = {
   KICKER: COPY.kicker,
   TITLE: 'Título da edição',
   DESCRIPTION: 'Resumo curto da edição, direto no e-mail.',
+  BODY: [
+    `<p style="margin:0 0 16px 0;font-family:${SERIF};font-size:18px;line-height:1.7;color:#0B0B0C;">Esta é a versão reduzida da edição: um TLDR com os destaques, escrito no CMS na coleção <strong>E-mails</strong>.</p>`,
+    '<ul style="margin:0 0 16px 0;padding:0 0 0 20px;">',
+    `<li style="margin:0 0 6px 0;font-family:${SERIF};font-size:18px;line-height:1.65;color:#0B0B0C;">O que muda nos modelos de linguagem em 2026</li>`,
+    `<li style="margin:0 0 6px 0;font-family:${SERIF};font-size:18px;line-height:1.65;color:#0B0B0C;">A ferramenta que substituiu três assinaturas do time</li>`,
+    `<li style="margin:0 0 6px 0;font-family:${SERIF};font-size:18px;line-height:1.65;color:#0B0B0C;">O evento de tecnologia que vale a pena acompanhar</li>`,
+    '</ul>',
+  ].join(''),
   CTA_LABEL: COPY.cta,
   CTA_URL: 'https://introducing.news/arquivo/',
   SIGN_OFF: COPY.signOff,

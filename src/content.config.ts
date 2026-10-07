@@ -7,7 +7,6 @@ const posts = defineCollection({
   schema: z.object({
     title: z.string(),
     description: z.string(),
-    category: z.enum(['ia', 'ferramentas', 'dados', 'ensaio', 'carreira']).default('ensaio'),
     publishedAt: z.coerce.date(),
     cover: z.enum(['fig-01', 'fig-02', 'fig-03']).default('fig-01'),
     /** Imagem de capa enviada pelo CMS; sobrepõe a figura abstrata. */

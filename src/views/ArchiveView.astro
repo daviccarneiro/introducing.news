@@ -1,8 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
-import Badge from '../components/Badge.astro';
 import SubscribeForm from '../components/SubscribeForm.astro';
-import { CATEGORIES, categoryLabel, t } from '../copy';
+import { t } from '../copy';
 import { formatDate, getPosts, readingTime } from '../lib/posts';
 
 const posts = await getPosts();
@@ -14,21 +13,10 @@ const posts = await getPosts();
     <p class="head__sub">{t('archive.sub')}</p>
   </section>
 
-  <div class="filters container">
-    <label class="visually-hidden" for="filtro-categoria">{t('archive.filter.label')}</label>
-    <div class="select">
-      <select id="filtro-categoria" data-category-filter>
-        <option value="">{t('archive.filter.all')}</option>
-        {CATEGORIES.map((category) => <option value={category}>{categoryLabel(category)}</option>)}
-      </select>
-      <img class="select__icon" src="/icons/chevron-down.svg" width="16" height="16" alt="" aria-hidden="true" />
-    </div>
-  </div>
-
   <section class="list container">
     {
       posts.map((post) => (
-        <a class="row" href={`/arquivo/${post.id}/`} data-category={post.data.category}>
+        <a class="row" href={`/arquivo/${post.id}/`}>
           <div class="row__meta">
             <time datetime={post.data.publishedAt.toISOString()}>
               {formatDate(post.data.publishedAt)}
@@ -38,17 +26,14 @@ const posts = await getPosts();
             </span>
           </div>
           <div class="row__body">
-            <div class="row__title-row">
-              <h2>{post.data.title}</h2>
-              <Badge>{categoryLabel(post.data.category)}</Badge>
-            </div>
+            <h2>{post.data.title}</h2>
             <p class="row__excerpt">{post.data.description}</p>
           </div>
           <img class="row__arrow" src="/icons/arrow-right.svg" width="20" height="20" alt="" aria-hidden="true" />
         </a>
       ))
     }
-    <p class="list__empty meta" data-list-empty hidden>{t('archive.empty')}</p>
+    {posts.length === 0 && <p class="list__empty meta">{t('archive.empty')}</p>}
   </section>
 
   <section class="subscribe-band container">
@@ -61,25 +46,6 @@ const posts = await getPosts();
     </div>
   </section>
 </Base>
-
-<script>
-  const filter = document.querySelector('[data-category-filter]');
-  const empty = document.querySelector('[data-list-empty]');
-  if (filter instanceof HTMLSelectElement) {
-    const rows = Array.from(document.querySelectorAll<HTMLElement>('.row[data-category]'));
-    const apply = () => {
-      let visible = 0;
-      for (const row of rows) {
-        const match = !filter.value || row.dataset.category === filter.value;
-        row.hidden = !match;
-        if (match) visible += 1;
-      }
-      if (empty instanceof HTMLElement) empty.hidden = visible > 0;
-    };
-    filter.addEventListener('change', apply);
-    apply();
-  }
-</script>
 
 <style>
   .head {
@@ -98,34 +64,6 @@ const posts = await getPosts();
     font: 400 16px/1.6 var(--font-sans);
     color: var(--muted-foreground);
     max-width: 640px;
-  }
-
-  .filters {
-    padding-block: var(--space-2) var(--space-4);
-  }
-
-  .select {
-    position: relative;
-    display: inline-flex;
-    align-items: center;
-  }
-
-  .select select {
-    appearance: none;
-    height: 39px;
-    padding: var(--space-2) 36px var(--space-2) var(--space-3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-md);
-    background: var(--card);
-    color: var(--foreground);
-    font: 400 14px/1.5 var(--font-sans);
-    cursor: pointer;
-  }
-
-  .select__icon {
-    position: absolute;
-    right: var(--space-3);
-    pointer-events: none;
   }
 
   .list {
@@ -148,10 +86,6 @@ const posts = await getPosts();
     background: var(--muted);
   }
 
-  .row[hidden] {
-    display: none;
-  }
-
   .row__meta {
     display: flex;
     flex-direction: column;
@@ -164,12 +98,6 @@ const posts = await getPosts();
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
-  }
-
-  .row__title-row {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-3);
   }
 
   .row h2 {

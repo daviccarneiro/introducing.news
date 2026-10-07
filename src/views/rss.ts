@@ -22,7 +22,6 @@ export async function buildRss(site: URL | undefined): Promise<Response> {
       <guid isPermaLink="true">${url}</guid>
       <description>${escapeXml(post.data.description)}</description>
       <pubDate>${post.data.publishedAt.toUTCString()}</pubDate>
-      <category>${escapeXml(post.data.category)}</category>
     </item>`;
     })
     .join('\n');

@@ -1,11 +1,10 @@
 ---
 import { render } from 'astro:content';
 import Base from '../layouts/Base.astro';
-import Badge from '../components/Badge.astro';
 import Cover from '../components/Cover.astro';
 import PostCard from '../components/PostCard.astro';
 import SubscribeForm from '../components/SubscribeForm.astro';
-import { categoryLabel, t } from '../copy';
+import { t } from '../copy';
 import { getAuthor, getPosts, initialsOf, readingTime, type Post } from '../lib/posts';
 
 interface Props {
@@ -28,9 +27,7 @@ const author = await getAuthor(post);
       <div class="post-head__inner">
         <a class="post-head__back" href="/arquivo/">{t('post.back')}</a>
         <div class="post-head__title">
-          <h1>{post.data.title}</h1><span class="post-head__tag"
-            ><Badge>{categoryLabel(post.data.category)}</Badge></span
-          >
+          <h1>{post.data.title}</h1>
         </div>
         <p class="post-head__lead">{post.data.description}</p>
         {
@@ -135,15 +132,8 @@ const author = await getAuthor(post);
   }
 
   .post-head h1 {
-    display: inline;
     font: 600 clamp(32px, 4.5vw, 44px) / 1.12 var(--font-serif);
     letter-spacing: -0.015em;
-  }
-
-  .post-head__tag {
-    display: inline-block;
-    margin-left: var(--space-3);
-    vertical-align: middle;
   }
 
   .post-head__lead {

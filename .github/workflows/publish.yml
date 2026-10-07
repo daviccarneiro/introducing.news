@@ -8,8 +8,8 @@ on:
     paths:
       - 'src/content/posts/**'
   schedule:
-    # Segundas e quintas, 09:00 America/Sao_Paulo (UTC-3, sem horário de verão).
-    - cron: '0 12 * * 1,4'
+    # Segundas, 07:45 America/Sao_Paulo (UTC-3, sem horário de verão).
+    - cron: '45 10 * * 1'
   workflow_dispatch:
 
 permissions:

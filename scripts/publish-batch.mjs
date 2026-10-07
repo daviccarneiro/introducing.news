@@ -8,9 +8,9 @@
  *   node scripts/publish-batch.mjs --check    # imprime "yes"/"no": há algo pronto e vencido?
  *
  * Uma edição entra no batch com `status: scheduled` e a data em `publishedAt`.
- * A data é normalizada para o próximo dia de batch (segunda ou quinta): uma
- * edição marcada para quarta só é publicada na quinta. A partir daí o status
- * vira `published` e o site (que só mostra publicadas) passa a exibi-la.
+ * A data é normalizada para o próximo dia de batch (toda segunda): uma edição
+ * marcada para quarta só é publicada na segunda seguinte. A partir daí o
+ * status vira `published` e o site (que só mostra publicadas) passa a exibi-la.
  *
  * `--check` não tem dependências externas de propósito: o workflow o executa
  * antes de `npm ci`, garantindo que nada é instalado, commitado ou publicado
@@ -18,9 +18,9 @@
  * preenchido (title, description, signature e publishedAt).
  *
  * Rodado pelo workflow "Publicar batch": em mudanças de src/content/posts
- * (o commit do Keystatic ao programar) e por cron nas segundas e quintas
- * (09:00 BRT). O workflow commita o resultado e aciona o Deploy — pushes
- * feitos com GITHUB_TOKEN não disparam outros workflows por conta própria.
+ * (o commit do Keystatic ao programar) e por cron nas segundas (07:45 BRT).
+ * O workflow commita o resultado e aciona o Deploy — pushes feitos com
+ * GITHUB_TOKEN não disparam outros workflows por conta própria.
  */
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 
@@ -28,7 +28,7 @@ const POSTS_DIR = new URL('../src/content/posts/', import.meta.url);
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
 const check = args.includes('--check');
-const BATCH_WEEKDAYS = new Set([1, 4]); // segunda e quinta
+const BATCH_WEEKDAYS = new Set([1]); // segunda-feira
 
 const today = new Intl.DateTimeFormat('en-CA', {
   timeZone: 'America/Sao_Paulo',
@@ -54,7 +54,7 @@ function isoDay(value) {
   return Number.isNaN(date.valueOf()) ? null : date.toISOString().slice(0, 10);
 }
 
-/** Próximo dia de batch (ou o próprio dia, se já for segunda/quinta). */
+/** Próximo dia de batch (ou o próprio dia, se já for segunda). */
 function batchDayFor(day) {
   const date = new Date(`${day}T00:00:00Z`);
   for (let i = 0; i < 7; i += 1) {

@@ -10,22 +10,11 @@ const postSchema = {
   description: fields.text({
     label: 'Resumo',
     multiline: true,
-    description: 'Aparece no card, no RSS e no e-mail.',
-  }),
-  category: fields.select({
-    label: 'Categoria',
-    options: [
-      { label: 'IA', value: 'ia' },
-      { label: 'Ferramentas', value: 'ferramentas' },
-      { label: 'Dados', value: 'dados' },
-      { label: 'Ensaio', value: 'ensaio' },
-      { label: 'Carreira', value: 'carreira' },
-    ],
-    defaultValue: 'ensaio',
+    description: 'Aparece no card, no RSS e no e-mail (quando não há TLDR na coleção E-mails).',
   }),
   publishedAt: fields.date({
     label: 'Data de publicação',
-    description: 'Para posts programados, use uma segunda ou uma quinta (dia do batch).',
+    description: 'Para edições programadas, use uma segunda (dia do batch semanal).',
   }),
   cover: fields.select({
     label: 'Capa',
@@ -76,6 +65,28 @@ const authorSchema = {
   }),
 };
 
+const emailSchema = {
+  subject: fields.slug({ name: { label: 'Assunto' } }),
+  edition: fields.relationship({
+    label: 'Edição',
+    description: 'A edição que este e-mail anuncia.',
+    collection: 'posts',
+    validation: { isRequired: true },
+  }),
+  previewText: fields.text({
+    label: 'Preheader (opcional)',
+    description: 'Texto curto exibido na prévia da caixa de entrada. Sem ele, usa o resumo da edição.',
+  }),
+  content: fields.mdx({
+    label: 'Conteúdo do e-mail',
+    description:
+      'Versão reduzida da edição: negrito, listas, links e imagens. O layout é definido pelo template do e-mail.',
+    options: {
+      image: { directory: 'public/images/emails', publicPath: '/images/emails/' },
+    },
+  }),
+};
+
 export default config({
   storage: useGitHub
     ? { kind: 'github', repo: 'daviccarneiro/introducing.news' }
@@ -85,6 +96,7 @@ export default config({
     navigation: {
       'Edições': ['posts'],
       'Autores': ['authors'],
+      'E-mails': ['emails'],
     },
   },
   collections: {
@@ -104,6 +116,15 @@ export default config({
       format: { data: 'json' },
       columns: ['name', 'role'],
       schema: authorSchema,
+    }),
+    emails: collection({
+      label: 'E-mails',
+      slugField: 'subject',
+      path: 'src/content/emails/*',
+      entryLayout: 'content',
+      format: { contentField: 'content' },
+      columns: ['subject', 'edition'],
+      schema: emailSchema,
     }),
   },
 });

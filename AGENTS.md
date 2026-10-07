@@ -27,6 +27,7 @@ src/
   copy.ts                  # todo o texto da interface (PT), com t() e categoryLabel()
   content/posts/*.mdx      # edições
   content/authors/*.json   # autores (assinatura do e-mail: nome, cargo, foto)
+  content/emails/*.mdx     # e-mails da newsletter (versão reduzida, ligados à edição)
   content.config.ts        # schemas das edições e dos autores (Astro)
   views/                   # HomeView, ArchiveView, PostView, rss
   pages/
@@ -38,12 +39,14 @@ src/
   components/              # SiteHeader, SiteFooter, PostCard, Cover, Badge, SubscribeForm
   lib/posts.ts             # consultas, autor da assinatura, readingTime, formatDate
   middleware.ts            # 301 de URLs antigas (/pt/*, /en/* → rotas atuais)
-keystatic.config.ts        # CMS (coleções "Edições" e "Autores")
-scripts/email-template.mjs # fonte de verdade do HTML/texto do e-mail
+keystatic.config.ts        # CMS (coleções "Edições", "Autores" e "E-mails")
+scripts/email-template.mjs # fonte de verdade do layout do e-mail
+scripts/email-body.mjs     # converte o MDX do e-mail em HTML de e-mail
 scripts/send-newsletter.mjs# disparo de Broadcast
 scripts/resend-template.mjs# publica o template do e-mail no Resend
 scripts/publish-batch.mjs  # publica edições programadas vencidas (batch)
 public/_headers            # headers de segurança (CSP, HSTS, nosniff…)
+public/images/brand/       # logo em PNG para o e-mail (clientes não renderizam SVG)
 wrangler.jsonc             # Worker (nome, compat, vars)
 worker-configuration.d.ts  # tipos gerados (só nomes — pode ser commitado)
 ```
@@ -58,7 +61,7 @@ worker-configuration.d.ts  # tipos gerados (só nomes — pode ser commitado)
 | `npm run preview` | preview no runtime real do Workers — **é um daemon**: `npx astro preview stop\|status\|logs` |
 | `npm run types` | regenera `worker-configuration.d.ts` — **rode após mudar `wrangler.jsonc` ou `.dev.vars`** |
 | `npm run deploy` | build + `wrangler deploy` (uso local; em produção o CI faz) |
-| `node scripts/send-newsletter.mjs <slug> [--dry-run]` | envia a edição por e-mail |
+| `node scripts/send-newsletter.mjs <slug> [--dry-run] [--preview]` | envia a edição por e-mail (`--preview` gera o HTML real no diretório temporário) |
 | `npm run template:sync` | publica/atualiza o template do e-mail no Resend (fonte: `scripts/email-template.mjs`) |
 | `npm run publish:batch` | publica edições programadas vencidas e prontas (`--dry-run` simula; `--check` só informa) |
 
@@ -90,10 +93,11 @@ Nunca commite valores. O repositório é público.
 - `src/content/posts/*.mdx`; schema em `src/content.config.ts`; no CMS, coleção `posts` ("Edições").
 - Campos: `title`, `description`, `category`, `publishedAt`, `cover` (fig-01..03), `coverImage` (upload opcional → `public/images/covers/`), `signature` (relação com Autores), `status`.
 - `src/content/authors/*.json`: nome, cargo/linha de assinatura e foto (upload → `public/images/authors/`). No CMS, coleção "Autores".
+- `src/content/emails/*.mdx`: e-mail da newsletter (versão reduzida), ligado a uma edição pelo campo `edition`; conteúdo em MDX (negrito, listas, links, imagens → upload em `public/images/emails/`). No CMS, coleção "E-mails".
 - `signature` define **quem assina o e-mail** que anuncia a edição — pode ser diferente de quem escreveu o conteúdo. O e-mail usa nome + cargo + foto (ou iniciais) do autor. Obrigatório no CMS; o envio recusa edição sem assinatura.
 - **Status editorial**: `draft` (rascunho) → `review` (em revisão) → `scheduled` (programada) → `published` (publicada). **Só `published` aparece no site, no RSS e no envio.**
-- Em "Programada", `publishedAt` é a data do batch; a data é normalizada para o próximo dia de batch (uma edição marcada para quarta é publicada na quinta).
-- **Batch**: o workflow **Publicar batch** (`.github/workflows/publish.yml`) é acionado por mudanças em `src/content/posts/**` (o commit do Keystatic ao programar) e por cron nas segundas e quintas às 09:00 BRT. Antes de tudo, um job de triagem roda `scripts/publish-batch.mjs --check` (sem dependências externas): se não houver edição `scheduled`, vencida e com `title`/`description`/`signature`/`publishedAt`, **nada mais roda** — sem `npm ci`, sem commit, sem deploy. Quando há, o script troca `scheduled` → `published`, commita e aciona o Deploy.
+- Em "Programada", `publishedAt` é a data do batch; a data é normalizada para o próximo dia de batch (uma edição marcada para quarta é publicada na segunda seguinte).
+- **Batch**: o workflow **Publicar batch** (`.github/workflows/publish.yml`) é acionado por mudanças em `src/content/posts/**` (o commit do Keystatic ao programar) e por cron nas segundas às 07:45 BRT. Antes de tudo, um job de triagem roda `scripts/publish-batch.mjs --check` (sem dependências externas): se não houver edição `scheduled`, vencida e com `title`/`description`/`signature`/`publishedAt`, **nada mais roda** — sem `npm ci`, sem commit, sem deploy. Quando há, o script troca `scheduled` → `published`, commita e aciona o Deploy.
 - Imagem de capa preenchida sobrepõe a figura abstrata em todos os lugares (card, destaque, post).
 - Todo o texto da interface vive em `src/copy.ts` (funções `t()` e `categoryLabel()`).
 
@@ -107,8 +111,10 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 
 ### Newsletter
 
-- `scripts/email-template.mjs` é a fonte de verdade do e-mail: HTML em tabelas, CSS inline, fontes de sistema e tokens de `tokens.css`, com fallback VML no botão (Gmail, Apple Mail, Outlook). `buildEmail()` gera o e-mail curto (título + resumo + CTA + assinatura).
+- `scripts/email-template.mjs` é a fonte de verdade do layout do e-mail: HTML em tabelas, CSS inline, fontes de sistema e tokens de `tokens.css`, com fallback VML no botão (Gmail, Apple Mail, Outlook). `buildEmail()` monta o e-mail (cabeçalho + resumo + corpo + CTA + assinatura). É uma versão reduzida da página, com formatação própria — o HTML do site não é reutilizado.
+- **O que editar onde**: o conteúdo do e-mail vem da coleção **E-mails** (associada à edição por `edition`), em MDX; `scripts/email-body.mjs` converte para HTML de e-mail (estilos inline, imagens em URL absoluta). Assunto e preheader vêm do e-mail, com fallback para `title`/`description` da edição. Sem entrada na coleção, o envio usa a versão automática (título + resumo + CTA). O layout geral vive em `scripts/email-template.mjs`.
 - `npm run template:sync` espelha esse HTML como template publicado no Resend (preview/teste no painel). O envio **não** depende do painel: usa o HTML do repositório.
+- Para ver o e-mail real antes de enviar: `node scripts/send-newsletter.mjs <slug> --preview` grava o HTML no diretório temporário (sem enviar); o painel do Resend mostra o layout com os valores de fallback das variáveis.
 - `scripts/send-newsletter.mjs <slug> [--dry-run]`: monta o e-mail a partir do frontmatter (assinatura via `signature`) e cria um Broadcast com `send: true`. Só edições com `status: published` podem ser enviadas. Anti-duplicidade pelo nome `edição-<slug>`.
 - Workflow **Newsletter** (Actions → Run workflow, input `slug`) roda o script. O slug é validado (`^[a-z0-9-]+$`) e passado por env (nunca interpolado direto em `run:`).
 - Remetente: `introducing.news <oi@introducing.news>`. Unsubscribe gerenciado pelo Resend.
@@ -116,7 +122,7 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 ### Deploy
 
 - Push na `main` → workflow **Deploy**: `npm ci` → build (com envs do Keystatic) → `wrangler deploy`.
-- Workflow **Publicar batch**: acionado por commits em `src/content/posts/**` e por cron (segundas e quintas, 09:00 BRT); só age quando há edição programada, vencida e completa (ver "Conteúdo").
+- Workflow **Publicar batch**: acionado por commits em `src/content/posts/**` e por cron (toda segunda, 07:45 BRT); só age quando há edição programada, vencida e completa (ver "Conteúdo").
 - Domínio customizado `introducing.news` anexado ao Worker `introducing-news`; assets servidos de `dist/client`.
 - **Staging**: `npm run deploy:staging` publica o build local no Worker `introducing-news-staging`, servido em `https://staging.introducing.news` (domínio customizado; regra de resposta `X-Robots-Tag: noindex, nofollow` no Cloudflare impede indexação). O staging tem `RESEND_API_KEY`, `RESEND_SEGMENT_ID` (segmento **staging** no Resend — contatos de teste não entram na audiência real) e `TURNSTILE_SECRET_KEY` próprios; sem `KEYSTATIC_*` o CMS não funciona lá. O hostname do staging está liberado no widget do Turnstile.
 - **CMS**: `https://cms.introducing.news` → 302 para `https://introducing.news/keystatic` (Redirect Rule da zona + DNS `cms` proxied, ambos configurados fora do repo, em Cloudflare › Rules › Redirect Rules). O login do GitHub continua no domínio principal — por isso é redirect, e não um domínio próprio no Worker.

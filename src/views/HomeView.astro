@@ -1,14 +1,21 @@
 ---
 import Base from '../layouts/Base.astro';
-import Badge from '../components/Badge.astro';
 import Cover from '../components/Cover.astro';
 import SubscribeForm from '../components/SubscribeForm.astro';
-import { categoryLabel, t } from '../copy';
-import { formatDate, getPosts, readingTime } from '../lib/posts';
+import { t } from '../copy';
+import { formatDate, getAuthor, getPosts, initialsOf, readingTime } from '../lib/posts';
 
 const posts = await getPosts();
 const [featured] = posts;
 const featuredHref = featured ? `/arquivo/${featured.id}/` : '/';
+const featuredAuthor = featured ? await getAuthor(featured) : null;
+const faqs = [
+  { q: t('home.faq.q1'), a: t('home.faq.a1') },
+  { q: t('home.faq.q2'), a: t('home.faq.a2') },
+  { q: t('home.faq.q3'), a: t('home.faq.a3') },
+  { q: t('home.faq.q4'), a: t('home.faq.a4') },
+  { q: t('home.faq.q5'), a: t('home.faq.a5') },
+];
 ---
 
 <Base>
@@ -36,24 +43,39 @@ const featuredHref = featured ? `/arquivo/${featured.id}/` : '/';
 
           <article class="featured__card">
             <div class="featured__body">
-              <div class="featured__title-row">
-                <h3>
-                  <a href={featuredHref}>{featured.data.title}</a>
-                </h3>
-                <Badge>{categoryLabel(featured.data.category)}</Badge>
-              </div>
+              <h3 class="featured__title">
+                <a href={featuredHref}>{featured.data.title}</a>
+              </h3>
               <p class="featured__lead">{featured.data.description}</p>
-              <div class="featured__author">
-                <span class="avatar" aria-hidden="true">DC</span>
-                <div class="featured__author-info">
-                  <p class="featured__name">Davi Carneiro</p>
-                  <p class="meta featured__byline">
-                    <span class="featured__date">{formatDate(featured.data.publishedAt)}</span>
-                    <span aria-hidden="true">·</span>
-                    <span>{readingTime(featured)} {t('post.minRead')}</span>
-                  </p>
-                </div>
-              </div>
+              {
+                featuredAuthor && (
+                  <div class="featured__author">
+                    {featuredAuthor.data.photo ? (
+                      <img
+                        class="avatar avatar--photo"
+                        src={featuredAuthor.data.photo}
+                        alt=""
+                        width="40"
+                        height="40"
+                        loading="lazy"
+                        decoding="async"
+                      />
+                    ) : (
+                      <span class="avatar" aria-hidden="true">
+                        {initialsOf(featuredAuthor.data.name)}
+                      </span>
+                    )}
+                    <div class="featured__author-info">
+                      <p class="featured__name">{featuredAuthor.data.name}</p>
+                      <p class="meta featured__byline">
+                        <span class="featured__date">{formatDate(featured.data.publishedAt)}</span>
+                        <span aria-hidden="true">·</span>
+                        <span>{readingTime(featured)} {t('post.minRead')}</span>
+                      </p>
+                    </div>
+                  </div>
+                )
+              }
               <a class="link-arrow" href={featuredHref}>
                 {t('home.latest.link')}
                 <img src="/icons/arrow-right.svg" width="16" height="16" alt="" aria-hidden="true" />
@@ -87,6 +109,20 @@ const featuredHref = featured ? `/arquivo/${featured.id}/` : '/';
         </div>
       </div>
       <img class="cta__doodle" src="/icons/sparkle.svg" width="40" height="40" alt="" aria-hidden="true" />
+    </div>
+  </section>
+
+  <section class="faq container" id="faq">
+    <h2>{t('home.faq.title')}</h2>
+    <div class="faq__list">
+      {
+        faqs.map((item) => (
+          <details class="faq__item">
+            <summary>{item.q}</summary>
+            <p>{item.a}</p>
+          </details>
+        ))
+      }
     </div>
   </section>
 </Base>
@@ -184,19 +220,13 @@ const featuredHref = featured ? `/arquivo/${featured.id}/` : '/';
     padding: var(--space-10);
   }
 
-  .featured__title-row {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-3);
-  }
-
-  .featured__title-row h3 {
+  .featured__title {
     min-width: 0;
     font: 600 clamp(30px, 3.2vw, 44px) / 1.3 var(--font-serif);
     letter-spacing: -0.015em;
   }
 
-  .featured__title-row h3 a {
+  .featured__title a {
     text-decoration: none;
   }
 
@@ -242,6 +272,10 @@ const featuredHref = featured ? `/arquivo/${featured.id}/` : '/';
     color: var(--accent-soft-foreground);
     font: 500 11px/1 var(--font-mono);
     letter-spacing: 0.06em;
+  }
+
+  .avatar--photo {
+    object-fit: cover;
   }
 
   .link-arrow {
@@ -329,6 +363,57 @@ const featuredHref = featured ? `/arquivo/${featured.id}/` : '/';
     height: 40px;
     padding-inline: var(--space-4);
     color: var(--primary-foreground);
+  }
+
+  .faq {
+    padding-block: var(--space-16) var(--space-20);
+  }
+
+  .faq h2 {
+    font: 600 28px/1.22 var(--font-serif);
+    letter-spacing: -0.01em;
+    margin-bottom: var(--space-8);
+  }
+
+  .faq__list {
+    border-top: 1px solid var(--border);
+  }
+
+  .faq__item {
+    border-bottom: 1px solid var(--border);
+  }
+
+  .faq__item summary {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+    padding-block: var(--space-5);
+    cursor: pointer;
+    list-style: none;
+    font: 500 17px/1.4 var(--font-sans);
+  }
+
+  .faq__item summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .faq__item summary::after {
+    content: '+';
+    font: 400 20px/1 var(--font-mono);
+    color: var(--muted-foreground);
+    transition: transform 0.15s ease;
+  }
+
+  .faq__item[open] summary::after {
+    transform: rotate(45deg);
+  }
+
+  .faq__item p {
+    font: 400 15px/1.65 var(--font-sans);
+    color: var(--muted-foreground);
+    max-width: 640px;
+    padding-bottom: var(--space-5);
   }
 
   @media (min-width: 768px) {

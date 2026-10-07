@@ -2,23 +2,33 @@
 /**
  * Envia a edição para a audiência do Resend via Broadcast.
  *
- * Uso: node scripts/send-newsletter.mjs <slug> [--dry-run]
+ * Uso: node scripts/send-newsletter.mjs <slug> [--dry-run] [--preview]
+ *
+ * --preview renderiza o e-mail real (com o conteúdo da coleção "E-mails") e
+ * grava um HTML no diretório temporário para abrir no navegador, sem enviar.
  *
  * O HTML/texto vêm de `email-template.mjs` (fonte de verdade do e-mail) e a
  * assinatura, do campo `signature` do frontmatter, que aponta para um autor
- * em `src/content/authors/`.
+ * em `src/content/authors/`. O conteúdo do e-mail (versão reduzida da página)
+ * vem da coleção "E-mails" (`src/content/emails/`), ligada à edição pelo
+ * campo `edition`; sem essa entrada, envia a versão automática (título +
+ * resumo + CTA + assinatura).
  *
  * Requer: RESEND_API_KEY + RESEND_SEGMENT_ID (opcionais: NEWSLETTER_FROM, SITE_URL).
  *
  * Anti-duplicidade: o nome do broadcast é `edição-<slug>` e é verificado antes
  * de criar um novo envio.
  */
-import { readFile } from 'node:fs/promises';
+import { readdir, readFile, writeFile } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import matter from 'gray-matter';
 import { buildEmail } from './email-template.mjs';
+import { renderEmailBody } from './email-body.mjs';
 
 const POSTS_DIR = new URL('../src/content/posts/', import.meta.url);
 const AUTHORS_DIR = new URL('../src/content/authors/', import.meta.url);
+const EMAILS_DIR = new URL('../src/content/emails/', import.meta.url);
 const SITE = (process.env.SITE_URL ?? 'https://introducing.news').replace(/\/$/, '');
 const FROM = process.env.NEWSLETTER_FROM ?? 'introducing.news <oi@introducing.news>';
 const API_KEY = process.env.RESEND_API_KEY;
@@ -26,6 +36,7 @@ const SEGMENT_ID = process.env.RESEND_SEGMENT_ID;
 
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
+const showPreview = args.includes('--preview');
 const slug = (args.find((arg) => !arg.startsWith('--')) ?? '').trim();
 
 if (!slug) {
@@ -36,7 +47,7 @@ if (!/^[a-z0-9-]+$/i.test(slug)) {
   console.error('✖ Slug inválido (use apenas letras, números e hífens).');
   process.exit(1);
 }
-if (!dryRun && (!API_KEY || !SEGMENT_ID)) {
+if (!dryRun && !showPreview && (!API_KEY || !SEGMENT_ID)) {
   console.error('✖ Faltam RESEND_API_KEY e/ou RESEND_SEGMENT_ID no ambiente.');
   process.exit(1);
 }
@@ -73,6 +84,26 @@ async function loadAuthor(signature) {
   process.exit(1);
 }
 
+/** E-mail da coleção "E-mails" associado à edição (`edition: <slug>`). */
+async function findEmailFor(edition) {
+  let names;
+  try {
+    names = (await readdir(EMAILS_DIR)).filter((name) => name.endsWith('.mdx')).sort();
+  } catch {
+    return null; // coleção ainda não existe
+  }
+  const matches = [];
+  for (const name of names) {
+    const raw = await readFile(new URL(name, EMAILS_DIR), 'utf8');
+    const email = matter(raw);
+    if (email.data.edition === edition) matches.push({ name, ...email });
+  }
+  if (matches.length > 1) {
+    console.warn(`⚠ ${matches.length} e-mails apontam para "${edition}" — usando ${matches[0].name}.`);
+  }
+  return matches[0] ?? null;
+}
+
 const file = new URL(`${slug}.mdx`, POSTS_DIR);
 let raw;
 try {
@@ -94,7 +125,24 @@ if (!data.title || !data.description) {
 
 const author = await loadAuthor(data.signature);
 const url = `${SITE}/arquivo/${slug}/`;
-const { html, text } = buildEmail({ title: data.title, description: data.description, url, site: SITE, author });
+
+const email = await findEmailFor(slug);
+let body = { html: '', text: '' };
+let subject = data.title;
+let preview = data.description;
+
+if (email) {
+  body = renderEmailBody(email.content, SITE);
+  subject = email.data.subject || data.title;
+  preview = email.data.previewText || data.description;
+  if (!body.html) {
+    console.warn(`⚠ E-mail "${email.name}" está sem conteúdo — enviando só o resumo da edição.`);
+  }
+} else {
+  console.warn('⚠ Nenhum e-mail na coleção "E-mails" para esta edição — enviando a versão automática (título + resumo).');
+}
+
+const { html, text } = buildEmail({ title: data.title, description: data.description, url, site: SITE, author, body });
 
 const missing = html.match(/\{\{\{(?!RESEND_UNSUBSCRIBE_URL\})[A-Z0-9_]+\}\}\}/g);
 if (missing) {
@@ -102,11 +150,23 @@ if (missing) {
   process.exit(1);
 }
 
+if (showPreview) {
+  const path = join(tmpdir(), `introducing-news-${slug}.html`);
+  await writeFile(path, html, 'utf8');
+  console.log(`◌ Preview escrito em ${path}`);
+  console.log(`   e-mail: ${email ? email.name : 'automático (sem entrada na coleção E-mails)'}`);
+  console.log(`   assunto: ${subject}`);
+  console.log(`   preheader: ${preview}`);
+  console.log('   Abra no navegador; a renderização varia um pouco entre clientes de e-mail.');
+  process.exit(0);
+}
+
 const name = `edição-${slug}`;
 
 if (dryRun) {
   console.log(`◌ [dry-run] enviaria "${name}" para o segmento ${SEGMENT_ID ?? 'não configurado'}.`);
-  console.log(`   assunto: ${data.title}`);
+  console.log(`   e-mail: ${email ? email.name : 'automático (sem entrada na coleção E-mails)'}`);
+  console.log(`   assunto: ${subject}`);
   console.log(`   assinatura: ${author.name}${author.role ? ` — ${author.role}` : ''}`);
   process.exit(0);
 }
@@ -119,16 +179,16 @@ if ((existing.data ?? []).some((broadcast) => broadcast.name === name)) {
 
 const broadcast = await api('/broadcasts', {
   method: 'POST',
-  body: JSON.stringify({
-    segment_id: SEGMENT_ID,
-    from: FROM,
-    subject: data.title,
-    name,
-    preview_text: data.description,
-    html,
-    text,
-    send: true,
-  }),
+    body: JSON.stringify({
+      segment_id: SEGMENT_ID,
+      from: FROM,
+      subject,
+      name,
+      preview_text: preview,
+      html,
+      text,
+      send: true,
+    }),
 });
 
 console.log(`✔ "${name}" enviado para o segmento ${SEGMENT_ID} (id: ${broadcast.id}).`);

@@ -24,6 +24,7 @@ src/
   copy.ts                  # todo o texto da interface, com t()
   content/posts/*.mdx      # as edições
   content/authors/*.json   # autores (assinatura do e-mail)
+  content/emails/*.mdx     # e-mails da newsletter (versão reduzida, ligados à edição)
   views/                   # HomeView, ArchiveView, PostView, rss
   pages/
     index.astro            # home (com o formulário de inscrição)
@@ -31,8 +32,9 @@ src/
     arquivo/[...slug].astro# página da edição
     rss.xml.ts             # feed RSS
     api/subscribe.ts       # inscrição (Resend)
-keystatic.config.ts        # CMS (coleções "Edições" e "Autores")
+keystatic.config.ts        # CMS (coleções "Edições", "Autores" e "E-mails")
 scripts/email-template.mjs # template do e-mail (fonte de verdade)
+scripts/email-body.mjs     # converte o MDX do e-mail em HTML de e-mail
 scripts/send-newsletter.mjs# disparo do Broadcast via Resend
 scripts/resend-template.mjs# sincroniza o template com o Resend
 scripts/publish-batch.mjs  # publica no site as edições programadas vencidas
@@ -76,16 +78,16 @@ No Resend, a audiência fica em um **segmento único** e cada contato recebe as 
 
 Cada edição tem um status no CMS: **Rascunho → Em revisão → Programada → Publicada**. Só "Publicada" aparece no site e no RSS.
 
-Uma edição "Programada" entra no próximo **batch**: escolha a data no campo "Data de publicação" (segunda ou quinta) e o workflow **Publicar batch** publica no dia do batch (segundas e quintas, 09:00 BRT) e dispara o deploy. O workflow também é acionado quando o CMS salva uma edição, mas só executa a publicação se existir edição programada, vencida e com conteúdo completo (`title`, `description`, `signature` e data) — caso contrário, nada roda.
+Uma edição "Programada" entra no próximo **batch**: escolha a data no campo "Data de publicação" (toda segunda) e o workflow **Publicar batch** publica no dia do batch (toda segunda, 07:45 BRT) e dispara o deploy. O workflow também é acionado quando o CMS salva uma edição, mas só executa a publicação se existir edição programada, vencida e com conteúdo completo (`title`, `description`, `signature` e data) — caso contrário, nada roda.
 
 ## Enviar uma edição por e-mail
 
-1. Deixe a edição com status **Publicada** (no CMS ou no `.mdx`), escolha em **Assinatura do e-mail** o autor que assina o envio (coleção **Autores**, com nome, cargo e foto) e faça push.
+1. Escreva o e-mail na coleção **E-mails** (negrito, listas, links e imagens), associando-o à edição pelo campo **Edição** — sem essa entrada, o envio usa a versão automática (título + resumo). Deixe a edição com status **Publicada**, escolha em **Assinatura do e-mail** o autor que assina o envio (coleção **Autores**) e faça push.
 2. Rode o workflow **Newsletter** no GitHub (Actions → Newsletter → Run workflow) informando o slug.
-   - Localmente: `doppler run -- node scripts/send-newsletter.mjs <slug>` (use `--dry-run` para simular).
+   - Localmente: `doppler run -- node scripts/send-newsletter.mjs <slug>` (use `--dry-run` para simular e `--preview` para gerar o HTML real e abrir no navegador, sem enviar).
 3. O script é idempotente: não envia a mesma edição duas vezes (nome `edição-<slug>`).
 
-O e-mail é curto (título + resumo + botão + assinatura) e leva para a edição completa no site. O HTML vem de `scripts/email-template.mjs`; para pré-visualizar no painel do Resend, rode `npm run template:sync` (o envio sempre usa o HTML do repositório).
+O e-mail é uma versão reduzida da página (título + resumo + corpo escrito na coleção **E-mails** + botão + assinatura) e leva para a edição completa no site. O **conteúdo** é editado no CMS; o **formato** vem de `scripts/email-template.mjs` e `scripts/email-body.mjs`. Para pré-visualizar no painel do Resend, rode `npm run template:sync` (o envio sempre usa o HTML do repositório).
 
 O Resend gerencia o link de descadastro automaticamente em cada Broadcast.
 

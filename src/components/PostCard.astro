@@ -1,7 +1,6 @@
 ---
-import Badge from './Badge.astro';
 import Cover from './Cover.astro';
-import { categoryLabel, t } from '../copy';
+import { t } from '../copy';
 import { formatDate, readingTime, type Post } from '../lib/posts';
 
 interface Props {
@@ -21,10 +20,7 @@ const href = `/arquivo/${post.id}/`;
     <p class="card__date meta">
       <time datetime={post.data.publishedAt.toISOString()}>{formatDate(post.data.publishedAt)}</time>
     </p>
-    <div class="card__title-row">
-      <h3 class="card__title"><a href={href}>{post.data.title}</a></h3>
-      <Badge>{categoryLabel(post.data.category)}</Badge>
-    </div>
+    <h3 class="card__title"><a href={href}>{post.data.title}</a></h3>
     <p class="card__excerpt">{post.data.description}</p>
     <p class="card__foot">
       <img src="/icons/clock.svg" width="14" height="14" alt="" aria-hidden="true" />
@@ -58,12 +54,6 @@ const href = `/arquivo/${post.id}/`;
     flex-direction: column;
     gap: var(--space-3);
     padding: var(--space-5);
-  }
-
-  .card__title-row {
-    display: flex;
-    align-items: baseline;
-    gap: var(--space-2);
   }
 
   .card__title {

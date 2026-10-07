@@ -74,4 +74,15 @@ if (existing) {
 }
 
 await api(`/templates/${id}/publish`, { method: 'POST' });
-console.log(`✔ Template publicado — confira em https://resend.com/templates.`);
+
+const published = await api(`/templates/${encodeURIComponent(TEMPLATE_ALIAS)}`);
+if (published.html !== templateHtml) {
+  throw new Error('✖ HTML do template no Resend não bate com `scripts/email-template.mjs`.');
+}
+const remoteKeys = (published.variables ?? []).map((variable) => variable.key).sort().join(',');
+const localKeys = templateVariables.map((variable) => variable.key).sort().join(',');
+if (remoteKeys !== localKeys) {
+  throw new Error(`✖ Variáveis divergentes — Resend: [${remoteKeys}] vs repo: [${localKeys}].`);
+}
+console.log(`✔ Verificado: HTML idêntico e ${templateVariables.length} variáveis em sincronia (inclui BODY).`);
+console.log('✔ Template publicado — confira em https://resend.com/templates.');
