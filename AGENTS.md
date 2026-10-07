@@ -36,10 +36,10 @@ src/
     api/subscribe.ts       # inscrição (valida, rate-limit, Turnstile, Resend)
   components/              # SiteHeader, SiteFooter, PostCard, Cover, Badge, SubscribeForm
   lib/posts.ts             # consultas, readingTime, formatDate (pt-BR)
+  middleware.ts            # 301 de URLs antigas (/pt/*, /en/* → rotas atuais)
 keystatic.config.ts        # CMS (coleção "Edições")
 scripts/send-newsletter.mjs# disparo de Broadcast
 public/_headers            # headers de segurança (CSP, HSTS, nosniff…)
-public/_redirects          # 301 de URLs antigas (/pt/ensaios, /pt/arquivo, /en/essays…)
 wrangler.jsonc             # Worker (nome, compat, vars)
 worker-configuration.d.ts  # tipos gerados (só nomes — pode ser commitado)
 ```
@@ -105,7 +105,7 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail → Assinar; o botão f
 
 - Push na `main` → workflow **Deploy**: `npm ci` → build (com envs do Keystatic) → `wrangler deploy`.
 - Domínio customizado `introducing.news` anexado ao Worker `introducing-news`; assets servidos de `dist/client`.
-- URLs antigas de quando o site era bilíngue redirecionam 301 via `public/_redirects` (`/pt/*`, `/en/*` → equivalentes em português).
+- URLs antigas de quando o site era bilíngue redirecionam 301 pelo `src/middleware.ts` (`/pt/*`, `/en/*` → rotas atuais). Preferimos middleware a `_redirects` porque o casamento com splat do `_redirects` se mostrou imprevisível para caminhos compostos.
 
 ## Armadilhas conhecidas (aprendidas na prática)
 
