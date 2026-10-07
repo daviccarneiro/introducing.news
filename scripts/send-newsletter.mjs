@@ -30,12 +30,14 @@ const LOCALES = ['pt', 'en'];
 
 const COPY = {
   pt: {
+    tagline: 'Novidades de tecnologia, curadas por professores e profissionais.',
     kicker: 'Nova edição',
     cta: 'Ler a edição completa',
     foot: 'Você recebe este e-mail porque assinou a introducing.news.',
     unsubscribe: 'cancelar inscrição',
   },
   en: {
+    tagline: 'Technology news curated by professors and professionals.',
     kicker: 'New edition',
     cta: 'Read the full edition',
     foot: 'You are receiving this email because you subscribed to introducing.news.',
@@ -116,8 +118,11 @@ function emailHtml(locale, post) {
           <table role="presentation" width="560" cellpadding="0" cellspacing="0" style="max-width:560px;width:100%;background:#FFFFFF;border:1px solid #E4E4E9;border-radius:16px;">
             <tr>
               <td style="padding:40px 40px 8px;">
-                <p style="margin:0 0 24px;font:600 16px/1.2 -apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:-0.01em;color:#0B0B0C;">
+                <p style="margin:0 0 8px;font:600 16px/1.2 -apple-system,Segoe UI,Roboto,sans-serif;letter-spacing:-0.01em;color:#0B0B0C;">
                   introducing<span style="color:#6B6B76;">.news</span>
+                </p>
+                <p style="margin:0 0 24px;font:400 13px/1.5 -apple-system,Segoe UI,Roboto,sans-serif;color:#9A9AA4;">
+                  ${copy.tagline}
                 </p>
                 <p style="margin:0 0 12px;font:500 11px/1.2 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.06em;text-transform:uppercase;color:#A63E0A;">
                   ${copy.kicker}

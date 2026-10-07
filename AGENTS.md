@@ -5,7 +5,7 @@
 
 ## Visão geral
 
-Newsletter bilíngue (PT/EN) sobre tecnologia. Cada edição é publicada como página na web e enviada por e-mail **no idioma escolhido pelo leitor**. Domínio: `https://introducing.news` (Cloudflare Workers). Repositório: `daviccarneiro/introducing.news`.
+Newsletter bilíngue (PT/EN) sobre tecnologia, com curadoria de **professores e profissionais**. O foco editorial: novos modelos de IA, ferramentas recém-lançadas e as discussões da área; a edição em português também cobre eventos futuros. Cada edição é publicada como página na web e enviada por e-mail **no idioma escolhido pelo leitor**. Domínio: `https://introducing.news` (Cloudflare Workers). Repositório: `daviccarneiro/introducing.news`.
 
 ## Stack
 

@@ -1,6 +1,6 @@
 # introducing.news
 
-Newsletter bilíngue (PT/EN) sobre tecnologia, sem o ruído do hype — site estático com edições publicadas na web e enviadas por e-mail no idioma escolhido pelo leitor.
+Newsletter bilíngue (PT/EN) com curadoria de novidades de tecnologia: novos modelos de IA, ferramentas recém-lançadas e as discussões da área. A edição em português também cobre eventos futuros. Curadoria de professores e profissionais.
 
 > Para agentes de código e manutenção (arquitetura, segredos, armadilhas e upgrades): veja [`AGENTS.md`](./AGENTS.md).
 
