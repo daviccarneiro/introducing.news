@@ -39,10 +39,6 @@ const postSchema = {
     directory: 'public/images/covers',
     publicPath: '/images/covers/',
   }),
-  translation: fields.text({
-    label: 'Slug da tradução',
-    description: 'Slug do arquivo equivalente no outro idioma (sem extensão).',
-  }),
   draft: fields.checkbox({
     label: 'Rascunho',
     description: 'Rascunhos não aparecem no site.',
@@ -57,24 +53,14 @@ export default config({
   ui: {
     brand: { name: 'introducing.news' },
     navigation: {
-      'Português': ['postsPt'],
-      'English': ['postsEn'],
+      Edições: ['posts'],
     },
   },
   collections: {
-    postsPt: collection({
-      label: 'Edições · PT',
+    posts: collection({
+      label: 'Edições',
       slugField: 'title',
-      path: 'src/content/posts/pt/*',
-      entryLayout: 'content',
-      format: { contentField: 'content' },
-      columns: ['title', 'publishedAt'],
-      schema: postSchema,
-    }),
-    postsEn: collection({
-      label: 'Editions · EN',
-      slugField: 'title',
-      path: 'src/content/posts/en/*',
+      path: 'src/content/posts/*',
       entryLayout: 'content',
       format: { contentField: 'content' },
       columns: ['title', 'publishedAt'],

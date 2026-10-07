@@ -1,6 +1,5 @@
 ---
-import { useTranslations } from '../i18n/ui';
-import { getLocale } from '../i18n/utils';
+import { t } from '../copy';
 
 interface Props {
   id?: string;
@@ -8,8 +7,6 @@ interface Props {
 }
 
 const { id = 'assinar', compact = false } = Astro.props;
-const locale = getLocale(Astro.url);
-const t = useTranslations(locale);
 const inputId = `email-${id}-${compact ? 'c' : 'f'}`;
 const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 ---
@@ -18,7 +15,6 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
   class:list={['subscribe', { 'subscribe--compact': compact }]}
   id={id}
   data-subscribe
-  data-msg-lang={t('form.langRequired')}
   data-msg-sending={t('form.sending')}
   data-msg-success={t('form.success')}
   data-msg-error={t('form.error')}
@@ -37,19 +33,6 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
       autocomplete="email"
       required
     />
-
-    <fieldset class="subscribe__lang">
-      <legend class="visually-hidden">{t('form.lang.legend')}</legend>
-      <label class="lang-pill">
-        <input type="radio" name="locale" value="pt" />
-        <span>Português</span>
-      </label>
-      <label class="lang-pill">
-        <input type="radio" name="locale" value="en" />
-        <span>English</span>
-      </label>
-    </fieldset>
-
     <button type="submit">{t('form.button')}</button>
   </div>
 
@@ -60,12 +43,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 
   {
     turnstileSiteKey && (
-      <div
-        class="cf-turnstile"
-        data-sitekey={turnstileSiteKey}
-        data-theme="light"
-        data-language={locale === 'pt' ? 'pt-BR' : 'en'}
-      />
+      <div class="cf-turnstile" data-sitekey={turnstileSiteKey} data-theme="light" data-language="pt-BR" />
     )
   }
 
@@ -78,42 +56,6 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     flex-direction: column;
     gap: var(--space-3);
     scroll-margin-top: var(--space-16);
-  }
-
-  .subscribe__lang {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    margin: 0;
-    padding: 0;
-    border: 0;
-  }
-
-  .lang-pill {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-    padding: 5px 10px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-full);
-    font: 500 11px/1.2 var(--font-mono);
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--muted-foreground);
-    cursor: pointer;
-    background: var(--card);
-  }
-
-  .lang-pill input {
-    position: absolute;
-    opacity: 0;
-    pointer-events: none;
-  }
-
-  .lang-pill:has(input:checked) {
-    border-color: var(--foreground);
-    color: var(--foreground);
   }
 
   .subscribe__row {
@@ -156,13 +98,13 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
   }
 
-  .subscribe[data-lang] button {
+  .subscribe[data-ready] button {
     background: var(--accent);
     color: var(--accent-foreground);
     cursor: pointer;
   }
 
-  .subscribe[data-lang] button:hover {
+  .subscribe[data-ready] button:hover {
     background: var(--accent-600);
     transform: translateY(-1px);
     box-shadow: var(--shadow-sm);
@@ -206,35 +148,19 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
   document.querySelectorAll('[data-subscribe]').forEach((form) => {
     if (!(form instanceof HTMLFormElement)) return;
 
+    const consent = form.querySelector('input[name="consent"]');
     const syncButtonState = () => {
-      const selected = form.querySelector('input[name="locale"]:checked');
-      if (selected instanceof HTMLInputElement) form.dataset.lang = selected.value;
-      else delete form.dataset.lang;
+      if (consent instanceof HTMLInputElement && consent.checked) form.dataset.ready = 'true';
+      else delete form.dataset.ready;
     };
-    // Clicar na opção já marcada desliga (toggle), deixando o Assinar inativo.
-    let lastChecked: HTMLInputElement | null = null;
-    form.querySelectorAll('input[name="locale"]').forEach((radio) => {
-      if (!(radio instanceof HTMLInputElement)) return;
-      radio.addEventListener('click', () => {
-        if (lastChecked === radio) {
-          radio.checked = false;
-          lastChecked = null;
-        } else {
-          lastChecked = radio;
-        }
-        syncButtonState();
-      });
-    });
+    consent?.addEventListener('change', syncButtonState);
     syncButtonState();
 
     form.addEventListener('submit', async (event) => {
       event.preventDefault();
-      if (!(form instanceof HTMLFormElement)) return;
       const status = form.querySelector('.subscribe__status');
       const button = form.querySelector('button');
       const input = form.querySelector('input[type="email"]');
-      const lang = form.querySelector('input[name="locale"]:checked');
-      const consent = form.querySelector('input[name="consent"]');
       const turnstileInput = form.querySelector('[name="cf-turnstile-response"]');
       if (
         !(status instanceof HTMLElement) ||
@@ -245,7 +171,6 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
       }
 
       const messages = {
-        lang: form.dataset.msgLang ?? '…',
         sending: form.dataset.msgSending ?? '…',
         success: form.dataset.msgSuccess ?? 'OK',
         error: form.dataset.msgError ?? 'Error',
@@ -257,12 +182,6 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
       const email = input.value.trim();
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         status.textContent = messages.invalid;
-        status.dataset.state = 'error';
-        status.hidden = false;
-        return;
-      }
-      if (!(lang instanceof HTMLInputElement)) {
-        status.textContent = messages.lang;
         status.dataset.state = 'error';
         status.hidden = false;
         return;
@@ -285,7 +204,6 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email,
-            locale: lang.value,
             consent: true,
             turnstileToken:
               turnstileInput instanceof HTMLInputElement ? turnstileInput.value : '',
@@ -293,6 +211,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
         });
         if (response.ok) {
           form.reset();
+          syncButtonState();
           status.textContent = messages.success;
           status.dataset.state = 'ok';
         } else {

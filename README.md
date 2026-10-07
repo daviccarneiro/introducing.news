@@ -1,6 +1,6 @@
 # introducing.news
 
-Newsletter bilíngue (PT/EN) com curadoria de novidades de tecnologia: novos modelos de IA, ferramentas recém-lançadas e as discussões da área. A edição em português também cobre eventos futuros. Curadoria de professores e profissionais.
+Newsletter em português com curadoria de novidades de tecnologia: novos modelos de IA, ferramentas recém-lançadas, as discussões da área e os eventos que vêm por aí. Curadoria de professores e profissionais.
 
 > Para agentes de código e manutenção (arquitetura, segredos, armadilhas e upgrades): veja [`AGENTS.md`](./AGENTS.md).
 
@@ -9,42 +9,33 @@ Newsletter bilíngue (PT/EN) com curadoria de novidades de tecnologia: novos mod
 | Camada | Ferramenta |
 | --- | --- |
 | Site | [Astro 7](https://astro.build) (content collections + MDX) |
-| i18n | Nativo do Astro (`/pt/` e `/en/`) + detecção por IP no Worker |
-| CMS | [Keystatic](https://keystatic.com) — uma coleção por idioma; modo local no dia a dia, GitHub opcional |
+| CMS | [Keystatic](https://keystatic.com) — modo local em dev; modo GitHub em produção |
 | Hospedagem | [Cloudflare Workers](https://developers.cloudflare.com/workers/) (`@astrojs/cloudflare`) |
-| E-mail | [Resend](https://resend.com) — Contacts + Segments (PT/EN) + Broadcasts |
+| E-mail | [Resend](https://resend.com) — Contacts + Segment + Broadcasts |
 | Segredos | [Doppler](https://doppler.com) (local) + GitHub Actions secrets (CI) |
 | Deploy | GitHub Actions → `wrangler deploy` |
 
 Design: arquivo `introducing.news — Design` no Figma. Os tokens (cores, tipografia, espaçamento, raios) estão espelhados em `src/styles/tokens.css`.
 
-### Idiomas
-
-- Rotas com prefixo: `/pt/...` (padrão) e `/en/...` (arquivo em `/en/essays/`).
-- A raiz `/` redireciona automaticamente, nesta ordem: cookie `lang` → país do IP (`cf-ipcountry`) → `Accept-Language` → `pt`.
-- O seletor PT/EN no header grava a preferência em cookie via `/api/lang` (vale para a navegação, não só para o e-mail).
-- Cada página publica `hreflang` (pt-BR, en, x-default) e canonical próprios.
-- **Não usamos Weglot nem tradução automática de DOM**: cada idioma tem conteúdo próprio (arquivos e dicionário de UI em `src/i18n/`), o que é melhor para SEO, performance e qualidade editorial.
-
 ## Estrutura
 
 ```
 src/
-  i18n/                    # locales, dicionário de UI e utilitários
-  content/posts/pt/*.mdx   # edições em português
-  content/posts/en/*.mdx   # edições em inglês
+  copy.ts                  # todo o texto da interface, com t()
+  content/posts/*.mdx      # as edições
   views/                   # HomeView, ArchiveView, PostView, rss
   pages/
-    index.ts               # / → redirect por IP/cookie/idioma
-    pt/…  en/…             # home, arquivo e posts por idioma
-    api/subscribe.ts       # inscrição (Resend: segmento + propriedade locale)
-    api/lang.ts            # troca de idioma (cookie + redirect)
-keystatic.config.ts        # CMS: coleções "Edições · PT" e "Editions · EN"
-scripts/send-newsletter.mjs# Broadcast por idioma, com par de traduções
+    index.astro            # home (com o formulário de inscrição)
+    arquivo/index.astro    # arquivo de todas as edições
+    arquivo/[...slug].astro# página da edição
+    rss.xml.ts             # feed RSS
+    api/subscribe.ts       # inscrição (Resend)
+keystatic.config.ts        # CMS (coleção "Edições")
+scripts/send-newsletter.mjs# disparo do Broadcast via Resend
 wrangler.jsonc             # configuração do Worker
 ```
 
-Cada edição pode ter uma tradução: o campo `translation` no frontmatter aponta para o slug do arquivo equivalente no outro idioma (e vice-versa). Sem tradução, a edição aparece só no idioma em que existe.
+O site é **só em português**. URLs antigas de quando havia versão em inglês redirecionam 301 (`/pt/*`, `/en/*` → equivalentes em português).
 
 ## Desenvolvimento
 
@@ -56,7 +47,7 @@ doppler run -- npm run dev
 npm run dev
 ```
 
-O CMS fica em `http://127.0.0.1:4321/keystatic` (modo local: salva direto em `src/content/posts/{pt,en}/`).
+O CMS fica em `http://127.0.0.1:4321/keystatic` (modo local: salva direto em `src/content/posts/`).
 
 ```bash
 npm run check    # typecheck
@@ -70,19 +61,19 @@ Nunca commite valores. O repositório é público.
 
 - **Local**: Doppler (`doppler.yaml` aponta para `introducing-news/dev_personal`) ou `.dev.vars`.
 - **GitHub Actions** (Settings → Secrets and variables → Actions):
-  - Secrets: `RESEND_API_KEY`, `RESEND_SEGMENT_PT` / `RESEND_SEGMENT_EN`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `KEYSTATIC_GITHUB_CLIENT_ID`, `KEYSTATIC_GITHUB_CLIENT_SECRET`
+  - Secrets: `RESEND_API_KEY`, `RESEND_SEGMENT_ID`, `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `KEYSTATIC_GITHUB_CLIENT_ID`, `KEYSTATIC_GITHUB_CLIENT_SECRET`
   - Variables: `KEYSTATIC_GITHUB_APP_SLUG`, `PUBLIC_TURNSTILE_SITE_KEY`
-- **Runtime do Worker** (produção): `npx wrangler secret put RESEND_API_KEY`, `RESEND_SEGMENT_PT`, `RESEND_SEGMENT_EN`, `KEYSTATIC_GITHUB_CLIENT_ID`, `KEYSTATIC_GITHUB_CLIENT_SECRET`, `KEYSTATIC_SECRET`, `TURNSTILE_SECRET_KEY`.
+- **Runtime do Worker** (produção): `npx wrangler secret put RESEND_API_KEY`, `RESEND_SEGMENT_ID`, `KEYSTATIC_GITHUB_CLIENT_ID`, `KEYSTATIC_GITHUB_CLIENT_SECRET`, `KEYSTATIC_SECRET`, `TURNSTILE_SECRET_KEY`.
   Depois de definir/alterar segredos manualmente, rode `npx wrangler deploy` novamente — o `secret put` sozinho publica uma versão sem a configuração de assets gerada pelo adapter.
 
-No Resend, a audiência é dividida em dois **segments** (`PT` e `EN`) e cada contato recebe as propriedades `locale` e `consent_at`. O formulário permite escolher o idioma dos e-mails, exige **consentimento explícito** (checkbox) e passa pelo **Cloudflare Turnstile** (anti-bot) antes de inscrever o contato no segmento correspondente.
+No Resend, a audiência fica em um **segmento único** e cada contato recebe as propriedades `locale` e `consent_at`. O formulário exige **consentimento explícito** (checkbox) e passa pelo **Cloudflare Turnstile** (anti-bot) antes de inscrever o contato.
 
 ## Enviar uma edição por e-mail
 
-1. Publique a edição (no CMS ou criando o `.mdx` em `src/content/posts/{pt,en}/`) e faça push.
-2. Rode o workflow **Newsletter** no GitHub (Actions → Newsletter → Run workflow) informando o slug — pode ser o slug em qualquer um dos idiomas.
+1. Publique a edição (no CMS ou criando o `.mdx` em `src/content/posts/`) e faça push.
+2. Rode o workflow **Newsletter** no GitHub (Actions → Newsletter → Run workflow) informando o slug.
    - Localmente: `doppler run -- node scripts/send-newsletter.mjs <slug>` (use `--dry-run` para simular).
-3. O script descobre o par de traduções, envia um Broadcast por idioma (segmentos PT/EN) e é idempotente: não envia a mesma edição duas vezes (nome `edição-<locale>-<slug>`).
+3. O script é idempotente: não envia a mesma edição duas vezes (nome `edição-<slug>`).
 
 O Resend gerencia o link de descadastro automaticamente em cada Broadcast.
 

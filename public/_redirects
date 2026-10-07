@@ -1,2 +1,10 @@
-/pt/ensaios/* /pt/arquivo/:splat 301
-/pt/ensaios /pt/arquivo/ 301
+/pt/ensaios /arquivo/ 301
+/pt/arquivo /arquivo/ 301
+/en/essays /arquivo/ 301
+/pt / 301
+/en / 301
+/pt/ensaios/* /arquivo/:splat 301
+/pt/arquivo/* /arquivo/:splat 301
+/en/essays/* /arquivo/ 301
+/pt/* / 301
+/en/* / 301

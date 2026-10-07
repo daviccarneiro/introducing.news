@@ -2,24 +2,13 @@
 import Base from '../layouts/Base.astro';
 import Badge from '../components/Badge.astro';
 import SubscribeForm from '../components/SubscribeForm.astro';
-import { paths, type Locale } from '../i18n/config';
-import { categoryLabel, useTranslations } from '../i18n/ui';
-import { formatDate, getPosts, readingTime, slugOf } from '../lib/posts';
+import { categoryLabel, t } from '../copy';
+import { formatDate, getPosts, readingTime } from '../lib/posts';
 
-interface Props {
-  locale: Locale;
-}
-
-const { locale } = Astro.props;
-const t = useTranslations(locale);
-const posts = await getPosts(locale);
+const posts = await getPosts();
 ---
 
-<Base
-  title={t('meta.archive.title')}
-  description={t('meta.archive.description')}
-  alternate={paths.archive(locale === 'pt' ? 'en' : 'pt')}
->
+<Base title={t('meta.archive.title')} description={t('meta.archive.description')}>
   <section class="head container">
     <p class="eyebrow">{t('archive.eyebrow')}</p>
     <h1>{t('archive.title')}</h1>
@@ -32,12 +21,12 @@ const posts = await getPosts(locale);
     }
     {
       posts.map((post) => (
-        <a class="row" href={paths.post(locale, slugOf(post))}>
+        <a class="row" href={`/arquivo/${post.id}/`}>
           <div class="row__meta">
             <time class="meta" datetime={post.data.publishedAt.toISOString()}>
-              {formatDate(post.data.publishedAt, locale)}
+              {formatDate(post.data.publishedAt)}
             </time>
-            <Badge tone="accent">{categoryLabel(t, post.data.category)}</Badge>
+            <Badge tone="accent">{categoryLabel(post.data.category)}</Badge>
             <span class="meta row__reading">
               {readingTime(post)} {t('post.minRead')}
             </span>
@@ -58,7 +47,7 @@ const posts = await getPosts(locale);
         <h2>{t('archive.band.title')}</h2>
         <p class="meta">{t('archive.band.body')}</p>
       </div>
-      <SubscribeForm id={`assinar-archive-${locale}`} compact />
+      <SubscribeForm id="assinar-arquivo" compact />
     </div>
   </section>
 </Base>

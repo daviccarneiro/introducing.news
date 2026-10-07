@@ -12,8 +12,6 @@ const posts = defineCollection({
     cover: z.enum(['fig-01', 'fig-02', 'fig-03']).default('fig-01'),
     /** Imagem de capa enviada pelo CMS; sobrepõe a figura abstrata. */
     coverImage: z.string().optional(),
-    /** Slug da edição equivalente no outro idioma (opcional). */
-    translation: z.string().optional(),
     draft: z.boolean().default(false),
   }),
 });

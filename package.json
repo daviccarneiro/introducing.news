@@ -10,7 +10,8 @@
     "check": "astro check",
     "types": "wrangler types",
     "deploy": "npm run build && wrangler deploy",
-    "newsletter": "node scripts/send-newsletter.mjs"
+    "newsletter": "node scripts/send-newsletter.mjs",
+    "template:sync": "node scripts/resend-template.mjs"
   },
   "dependencies": {
     "@astrojs/cloudflare": "^14.3.4",

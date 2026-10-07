@@ -2,7 +2,6 @@ export const prerender = false;
 
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
-import { isLocale, type Locale } from '../../i18n/config';
 
 const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), {
@@ -54,19 +53,16 @@ const verifyTurnstile = async (secret: string, token: string, ip: string | null)
 
 export const POST: APIRoute = async ({ request }) => {
   let email = '';
-  let locale: Locale | null = null;
   let consent = false;
   let turnstileToken = '';
 
   try {
     const data = (await request.json()) as {
       email?: unknown;
-      locale?: unknown;
       consent?: unknown;
       turnstileToken?: unknown;
     };
     email = typeof data?.email === 'string' ? data.email.trim().toLowerCase() : '';
-    if (typeof data?.locale === 'string' && isLocale(data.locale)) locale = data.locale;
     consent = data?.consent === true;
     turnstileToken = typeof data?.turnstileToken === 'string' ? data.turnstileToken : '';
   } catch {
@@ -79,11 +75,6 @@ export const POST: APIRoute = async ({ request }) => {
 
   if (!consent) {
     return json({ error: 'É preciso aceitar receber os e-mails para continuar.' }, 400);
-  }
-
-  // Idioma é obrigatório: o formulário não pré-seleciona nenhum.
-  if (!locale) {
-    return json({ error: 'Escolha o idioma dos e-mails.' }, 400);
   }
 
   const ip = request.headers.get('cf-connecting-ip');
@@ -106,9 +97,9 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const apiKey = env.RESEND_API_KEY;
-  const segmentId = locale === 'pt' ? env.RESEND_SEGMENT_PT : env.RESEND_SEGMENT_EN;
+  const segmentId = env.RESEND_SEGMENT_ID;
   if (!apiKey || !segmentId) {
-    console.error('subscribe: RESEND_API_KEY ou segmento do Resend ausente');
+    console.error('subscribe: RESEND_API_KEY ou RESEND_SEGMENT_ID ausente');
     return json({ error: 'Serviço de inscrição não configurado.' }, 500);
   }
 
@@ -121,7 +112,7 @@ export const POST: APIRoute = async ({ request }) => {
     email,
     unsubscribed: false,
     properties: {
-      locale,
+      locale: 'pt',
       consent_at: new Date().toISOString(),
     },
     segments: [{ id: segmentId }],
@@ -133,7 +124,7 @@ export const POST: APIRoute = async ({ request }) => {
     body: JSON.stringify(payload),
   });
 
-  // Contato já existe: atualiza idioma/segmento em vez de falhar.
+  // Contato já existe: atualiza consentimento/segmento em vez de falhar.
   if (response.status === 409) {
     const found = await fetch(`https://api.resend.com/contacts/${encodeURIComponent(email)}`, {
       headers,

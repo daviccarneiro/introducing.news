@@ -3,17 +3,10 @@ import Base from '../layouts/Base.astro';
 import Badge from '../components/Badge.astro';
 import Cover from '../components/Cover.astro';
 import SubscribeForm from '../components/SubscribeForm.astro';
-import { paths, type Locale } from '../i18n/config';
-import { categoryLabel, useTranslations } from '../i18n/ui';
-import { formatDate, getPosts, readingTime, slugOf } from '../lib/posts';
+import { categoryLabel, t } from '../copy';
+import { formatDate, getPosts, readingTime } from '../lib/posts';
 
-interface Props {
-  locale: Locale;
-}
-
-const { locale } = Astro.props;
-const t = useTranslations(locale);
-const posts = await getPosts(locale);
+const posts = await getPosts();
 const [featured] = posts;
 ---
 
@@ -42,7 +35,7 @@ const [featured] = posts;
               <p class="eyebrow">{t('home.latest.kicker')}</p>
               <h2>{t('home.latest.title')}</h2>
             </div>
-            <a class="button button--secondary" href={paths.archive(locale)}>
+            <a class="button button--secondary" href="/arquivo/">
               {t('home.seeAll')}
               <span aria-hidden="true">↗</span>
             </a>
@@ -51,10 +44,10 @@ const [featured] = posts;
           <article class="featured__card">
             <div class="featured__body">
               <div class="featured__meta">
-                <Badge tone="accent">{categoryLabel(t, featured.data.category)}</Badge>
+                <Badge tone="accent">{categoryLabel(featured.data.category)}</Badge>
               </div>
               <h3>
-                <a href={paths.post(locale, slugOf(featured))}>{featured.data.title}</a>
+                <a href={`/arquivo/${featured.id}/`}>{featured.data.title}</a>
               </h3>
               <p class="featured__lead">{featured.data.description}</p>
               <div class="featured__author">
@@ -62,19 +55,19 @@ const [featured] = posts;
                 <div>
                   <p class="featured__name">Davi Carneiro</p>
                   <p class="meta featured__byline">
-                    <span>{formatDate(featured.data.publishedAt, locale)}</span>
+                    <span>{formatDate(featured.data.publishedAt)}</span>
                     <span>{readingTime(featured)} {t('post.minRead')}</span>
                   </p>
                 </div>
               </div>
-              <a class="link-arrow" href={paths.post(locale, slugOf(featured))}>
+              <a class="link-arrow" href={`/arquivo/${featured.id}/`}>
                 {t('home.latest.link')}
                 <span aria-hidden="true">↗</span>
               </a>
             </div>
             <a
               class="featured__cover"
-              href={paths.post(locale, slugOf(featured))}
+              href={`/arquivo/${featured.id}/`}
               tabindex="-1"
               aria-hidden="true"
             >
@@ -102,7 +95,7 @@ const [featured] = posts;
             {t('home.cta.linkedin')}
             <span aria-hidden="true">↗</span>
           </a>
-          <a class="button button--ghost-inverse" href={paths.archive(locale)}>{t('home.cta.browse')}</a>
+          <a class="button button--ghost-inverse" href="/arquivo/">{t('home.cta.browse')}</a>
         </div>
       </div>
       <svg class="cta__doodle" width="48" height="48" viewBox="0 0 24 24" fill="none" aria-hidden="true">

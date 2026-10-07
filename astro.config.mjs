@@ -9,13 +9,6 @@ export default defineConfig({
   site: 'https://introducing.news',
   output: 'static',
   session: false,
-  i18n: {
-    defaultLocale: 'pt',
-    locales: ['pt', 'en'],
-    // Roteamento manual: nós mesmos redirecionamos a raiz com base em IP/idioma.
-    // Mantém /keystatic e /api funcionando sem prefixo de locale.
-    routing: 'manual',
-  },
   env: {
     schema: {
       // Keystatic em modo GitHub (edição pela web). Opcionais: sem eles o CMS

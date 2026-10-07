@@ -1,10 +1,8 @@
 ---
 import Badge from './Badge.astro';
 import Cover from './Cover.astro';
-import { paths } from '../i18n/config';
-import { categoryLabel, useTranslations } from '../i18n/ui';
-import { getLocale } from '../i18n/utils';
-import { formatDate, readingTime, slugOf, type Post } from '../lib/posts';
+import { categoryLabel, t } from '../copy';
+import { formatDate, readingTime, type Post } from '../lib/posts';
 
 interface Props {
   post: Post;
@@ -12,9 +10,7 @@ interface Props {
 }
 
 const { post, cover = post.data.cover } = Astro.props;
-const locale = getLocale(Astro.url);
-const t = useTranslations(locale);
-const href = paths.post(locale, slugOf(post));
+const href = `/arquivo/${post.id}/`;
 ---
 
 <article class="card">
@@ -23,9 +19,9 @@ const href = paths.post(locale, slugOf(post));
   </a>
   <div class="card__body">
     <div class="card__meta">
-      <Badge tone="accent">{categoryLabel(t, post.data.category)}</Badge>
+      <Badge tone="accent">{categoryLabel(post.data.category)}</Badge>
       <time class="meta" datetime={post.data.publishedAt.toISOString()}>
-        {formatDate(post.data.publishedAt, locale)}
+        {formatDate(post.data.publishedAt)}
       </time>
     </div>
     <h3 class="card__title"><a href={href}>{post.data.title}</a></h3>
