@@ -68,29 +68,43 @@ export const POST: APIRoute = async ({ request }) => {
     segments: [{ id: segmentId }],
   };
 
-  let response = await fetch('https://api.resend.com/contacts', {
-    method: 'POST',
+  // O POST /contacts do Resend é upsert: retorna 201 tanto para contato novo
+  // quanto para existente. Consultamos antes para saber se é a primeira
+  // inscrição — é isso que decide se a automação de boas-vindas dispara.
+  const existing = await fetch(`https://api.resend.com/contacts/${encodeURIComponent(email)}`, {
     headers,
-    body: JSON.stringify(payload),
   });
 
-  const isNewContact = response.ok;
+  if (existing.status !== 404 && !existing.ok) {
+    console.error('subscribe: falha ao consultar contato', existing.status, await existing.text());
+    return json({ error: 'Não foi possível concluir a inscrição. Tente de novo.' }, 502);
+  }
 
-  // Contato já existe: atualiza consentimento/segmento em vez de falhar.
-  if (response.status === 409) {
-    const found = await fetch(`https://api.resend.com/contacts/${encodeURIComponent(email)}`, {
+  const isNewContact = existing.status === 404;
+
+  let response: Response;
+  if (isNewContact) {
+    response = await fetch('https://api.resend.com/contacts', {
+      method: 'POST',
       headers,
+      body: JSON.stringify(payload),
     });
-    if (found.ok) {
-      const contact = (await found.json()) as { id?: string };
-      if (contact.id) {
-        response = await fetch(`https://api.resend.com/contacts/${contact.id}`, {
-          method: 'PATCH',
-          headers,
-          body: JSON.stringify(payload),
-        });
-      }
+  } else {
+    // Reinscrição: atualiza consentimento/segmento e reativa o contato.
+    const contact = (await existing.json()) as { id?: string };
+    if (!contact.id) {
+      console.error('subscribe: contato existente sem id');
+      return json({ error: 'Não foi possível concluir a inscrição. Tente de novo.' }, 502);
     }
+    response = await fetch(`https://api.resend.com/contacts/${contact.id}`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify({
+        unsubscribed: payload.unsubscribed,
+        properties: payload.properties,
+        segments: payload.segments,
+      }),
+    });
   }
 
   if (!response.ok) {
@@ -99,7 +113,7 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   // Só na primeira inscrição: dispara a automação de boas-vindas do Resend
-  // (evento definido em `scripts/welcome-email.mjs`). Reinscrições (PATCH) não
+  // (evento definido em `scripts/welcome-email.mjs`). Reinscrições não
   // disparam de novo, e falha aqui não derruba a inscrição.
   if (isNewContact) {
     try {
