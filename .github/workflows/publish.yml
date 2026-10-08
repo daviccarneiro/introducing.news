@@ -14,7 +14,6 @@ on:
 
 permissions:
   contents: write
-  actions: write
 
 concurrency:
   group: publish-batch
@@ -48,9 +47,7 @@ jobs:
         run: npm ci
       - name: Publicar edições programadas
         run: node scripts/publish-batch.mjs
-      - name: Commit, push e deploy
-        env:
-          GH_TOKEN: ${{ github.token }}
+      - name: Commit e push
         run: |
           if git diff --quiet; then
             echo "Nada mudou."
@@ -61,5 +58,4 @@ jobs:
           git add src/content/posts
           git commit -m "chore(content): publicar edições do batch"
           git push
-          # Push com GITHUB_TOKEN não dispara outros workflows; aciona o Deploy.
-          gh workflow run deploy.yml --ref main
+          # O push na main dispara o build/deploy da Netlify (Git integration).

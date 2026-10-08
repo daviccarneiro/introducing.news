@@ -12,8 +12,8 @@ dist/
 .dev.vars
 .dev.vars.*
 
-# cloudflare
-.wrangler/
+# netlify
+.netlify/
 
 # misc
 .DS_Store

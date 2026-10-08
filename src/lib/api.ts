@@ -1,4 +1,5 @@
-import { env } from 'cloudflare:workers';
+import { getStore } from '@netlify/blobs';
+import { TURNSTILE_SECRET_KEY } from 'astro:env/server';
 
 export const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
   new Response(JSON.stringify(body), {
@@ -6,14 +7,19 @@ export const json = (body: unknown, status = 200, headers: Record<string, string
     headers: { 'Content-Type': 'application/json', ...headers },
   });
 
-export const clientIp = (request: Request): string | null => request.headers.get('cf-connecting-ip');
+/** IP do visitante. A Netlify injeta `x-nf-client-connection-ip`; `x-forwarded-for` é o fallback. */
+export const clientIp = (request: Request): string | null => {
+  const direct = request.headers.get('x-nf-client-connection-ip');
+  if (direct) return direct;
+  const forwarded = request.headers.get('x-forwarded-for');
+  return forwarded ? (forwarded.split(',')[0]?.trim() ?? null) : null;
+};
 
 /**
- * Rate limit simples por IP usando a Cache API (por colo, aproximado).
+ * Rate limit simples por IP usando Netlify Blobs (consistência forte).
  * Nunca bloqueia por falha do limitador — é uma camada extra além do Turnstile.
  */
 export const isRateLimited = async (
-  request: Request,
   ip: string | null,
   scope: string,
   max = 5,
@@ -21,20 +27,18 @@ export const isRateLimited = async (
 ): Promise<boolean> => {
   if (!ip) return false;
   try {
-    const cache = (caches as unknown as { default: Cache }).default;
-    const key = new Request(
-      new URL(`/.internal/rate-limit/${scope}/${encodeURIComponent(ip)}`, request.url).toString(),
-      { method: 'GET' },
-    );
-    const cached = await cache.match(key);
-    const count = cached ? Number(await cached.text()) || 0 : 0;
-    if (count >= max) return true;
-    await cache.put(
-      key,
-      new Response(String(count + 1), {
-        headers: { 'Cache-Control': `max-age=${windowSeconds}` },
-      }),
-    );
+    const store = getStore({ name: 'rate-limit', consistency: 'strong' });
+    const key = `${scope}/${ip}`;
+    const now = Date.now();
+    const entry = (await store.get(key, { type: 'json' })) as
+      | { count?: number; resetAt?: number }
+      | null;
+    const active = entry?.resetAt != null && entry.resetAt > now;
+    if (active && (entry?.count ?? 0) >= max) return true;
+    await store.setJSON(key, {
+      count: active ? (entry?.count ?? 0) + 1 : 1,
+      resetAt: active ? entry?.resetAt : now + windowSeconds * 1000,
+    });
     return false;
   } catch {
     return false;
@@ -43,7 +47,7 @@ export const isRateLimited = async (
 
 /** Verifica o Turnstile; sem segredo configurado, não bloqueia. */
 export const verifyTurnstile = async (token: string, ip: string | null): Promise<boolean> => {
-  const secret = env.TURNSTILE_SECRET_KEY;
+  const secret = TURNSTILE_SECRET_KEY;
   if (!secret) return true;
   if (!token) return false;
   try {

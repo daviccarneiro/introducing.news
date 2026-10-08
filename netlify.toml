@@ -1,0 +1,20 @@
+[build]
+  command = "npm run build"
+  publish = "dist"
+
+[build.environment]
+  NODE_VERSION = "22"
+
+# www → apex (301). O apex é o host canônico; preserva path e query.
+[[redirects]]
+  from = "https://www.introducing.news/*"
+  to = "https://introducing.news/:splat"
+  status = 301
+  force = true
+
+# cms → /keystatic (302), como o redirect equivalente da Cloudflare.
+[[redirects]]
+  from = "https://cms.introducing.news/*"
+  to = "https://introducing.news/keystatic"
+  status = 302
+  force = true

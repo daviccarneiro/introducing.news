@@ -1,7 +1,7 @@
 export const prerender = false;
 
 import type { APIRoute } from 'astro';
-import { env } from 'cloudflare:workers';
+import { RESEND_API_KEY, RESEND_SEGMENT_ID } from 'astro:env/server';
 import { clientIp, isRateLimited, json, verifyTurnstile } from '../../lib/api';
 
 const RATE_LIMIT = { scope: 'subscribe', max: 5, windowSeconds: 600 };
@@ -33,7 +33,7 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   const ip = clientIp(request);
-  if (await isRateLimited(request, ip, RATE_LIMIT.scope, RATE_LIMIT.max, RATE_LIMIT.windowSeconds)) {
+  if (await isRateLimited(ip, RATE_LIMIT.scope, RATE_LIMIT.max, RATE_LIMIT.windowSeconds)) {
     return json(
       { error: 'Muitas tentativas. Tente de novo em alguns minutos.' },
       429,
@@ -46,8 +46,8 @@ export const POST: APIRoute = async ({ request }) => {
     return json({ error: 'Falha na verificação anti-bot. Recarregue e tente de novo.' }, 400);
   }
 
-  const apiKey = env.RESEND_API_KEY;
-  const segmentId = env.RESEND_SEGMENT_ID;
+  const apiKey = RESEND_API_KEY;
+  const segmentId = RESEND_SEGMENT_ID;
   if (!apiKey || !segmentId) {
     console.error('subscribe: RESEND_API_KEY ou RESEND_SEGMENT_ID ausente');
     return json({ error: 'Serviço de inscrição não configurado.' }, 500);

@@ -1,6 +1,6 @@
 // @ts-check
 import { defineConfig, envField } from 'astro/config';
-import cloudflare from '@astrojs/cloudflare';
+import netlify from '@astrojs/netlify';
 import react from '@astrojs/react';
 import mdx from '@astrojs/mdx';
 import keystatic from '@keystatic/astro';
@@ -17,11 +17,17 @@ export default defineConfig({
       KEYSTATIC_GITHUB_CLIENT_SECRET: envField.string({ context: 'server', access: 'secret', optional: true }),
       KEYSTATIC_SECRET: envField.string({ context: 'server', access: 'secret', optional: true }),
       PUBLIC_KEYSTATIC_GITHUB_APP_SLUG: envField.string({ context: 'client', access: 'public', optional: true }),
-      // Cloudflare Turnstile (CAPTCHA) na inscrição.
+      // Resend (inscrição/descadastro no site).
+      RESEND_API_KEY: envField.string({ context: 'server', access: 'secret', optional: true }),
+      RESEND_SEGMENT_ID: envField.string({ context: 'server', access: 'secret', optional: true }),
+      // Cloudflare Turnstile (CAPTCHA) na inscrição — o widget funciona em
+      // qualquer hospedagem; só o `siteverify` é chamado pelo servidor.
       TURNSTILE_SECRET_KEY: envField.string({ context: 'server', access: 'secret', optional: true }),
       PUBLIC_TURNSTILE_SITE_KEY: envField.string({ context: 'client', access: 'public', optional: true }),
     },
   },
-  adapter: cloudflare(),
+  // `middlewareMode: 'edge'` faz o middleware (redirects de /pt e /en) rodar em
+  // todas as requisições, inclusive nas páginas pré-renderizadas.
+  adapter: netlify({ middlewareMode: 'edge' }),
   integrations: [react(), mdx(), keystatic()],
 });

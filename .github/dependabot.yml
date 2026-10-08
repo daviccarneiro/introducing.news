@@ -17,10 +17,11 @@ updates:
       keystatic:
         patterns:
           - '@keystatic/*'
+      netlify:
+        patterns:
+          - '@netlify/*'
       tooling:
         patterns:
-          - wrangler
-          - miniflare
           - typescript
           - '@astrojs/check'
   - package-ecosystem: github-actions
