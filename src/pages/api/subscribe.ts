@@ -74,6 +74,8 @@ export const POST: APIRoute = async ({ request }) => {
     body: JSON.stringify(payload),
   });
 
+  const isNewContact = response.ok;
+
   // Contato já existe: atualiza consentimento/segmento em vez de falhar.
   if (response.status === 409) {
     const found = await fetch(`https://api.resend.com/contacts/${encodeURIComponent(email)}`, {
@@ -94,6 +96,24 @@ export const POST: APIRoute = async ({ request }) => {
   if (!response.ok) {
     console.error('subscribe: falha no Resend', response.status, await response.text());
     return json({ error: 'Não foi possível concluir a inscrição. Tente de novo.' }, 502);
+  }
+
+  // Só na primeira inscrição: dispara a automação de boas-vindas do Resend
+  // (evento definido em `scripts/welcome-email.mjs`). Reinscrições (PATCH) não
+  // disparam de novo, e falha aqui não derruba a inscrição.
+  if (isNewContact) {
+    try {
+      const event = await fetch('https://api.resend.com/events/send', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ event: 'newsletter.subscribed', email }),
+      });
+      if (!event.ok) {
+        console.error('subscribe: falha ao disparar boas-vindas', event.status, await event.text());
+      }
+    } catch (error) {
+      console.error('subscribe: erro ao disparar boas-vindas', error);
+    }
   }
 
   return json({ ok: true }, 200);

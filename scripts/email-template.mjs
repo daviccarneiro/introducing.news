@@ -22,9 +22,13 @@ export const TEMPLATE_NAME = 'introducing.news · nova edição';
 export const TEMPLATE_ALIAS = 'introducing-news-nova-edicao';
 export const TEMPLATE_SUBJECT = 'Nova edição da introducing.news';
 
+/** Assinatura curta do e-mail (mesma promessa da home: curadoria sem horas de pesquisa). */
+export const TAGLINE =
+  'Ficar em dia com tecnologia sem passar horas pesquisando, com curadoria de profissionais de tecnologia e de pesquisadores que testam a fundo e checam cada informação.';
+
 const COPY = {
   lang: 'pt-BR',
-  tagline: 'Novidades de tecnologia, curadas por professores e profissionais.',
+  tagline: TAGLINE,
   cta: 'Ler a edição completa',
   signOff: 'Um abraço,',
   foot: 'Você recebe este e-mail porque assinou a introducing.news.',
@@ -128,7 +132,7 @@ function initialsOf(name) {
     .join('');
 }
 
-function avatarHtml(author, site) {
+export function avatarHtml(author, site) {
   if (author.photo) {
     const src = /^https?:\/\//.test(author.photo) ? author.photo : `${site}${author.photo}`;
     return `<img src="${escapeHtml(src)}" width="40" height="40" alt="" style="display:block;width:40px;height:40px;border:0;border-radius:9999px;object-fit:cover;" />`;

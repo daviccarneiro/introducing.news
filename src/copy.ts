@@ -18,7 +18,7 @@ export const copy = {
   'home.title.before': 'O que importa em',
   'home.title.line2': 'sem exagero',
   'home.sub':
-    'Para quem quer ficar em dia com tecnologia sem passar horas pesquisando: novidades de IA, ferramentas recém-lançadas e as discussões da área, curadas por professores e profissionais que vivem tecnologia.',
+    'Para quem quer ficar em dia com tecnologia sem passar horas pesquisando: novidades de IA, ferramentas recém-lançadas e as discussões da área, curadas por profissionais de tecnologia, de programadores a CEOs, e por professores e pesquisadores que testam a fundo e checam cada informação antes de compartilhar.',
   'home.latest.title': 'Última edição',
   'home.latest.link': 'Ler edição completa',
   'home.seeAll': 'Ver todas as edições',
@@ -37,10 +37,10 @@ export const copy = {
   'home.faq.a5': 'Sim. Todo e-mail tem um link de cancelamento: você confirma a saída em uma página simples e pronto.',
   'home.faq.q6': 'O conteúdo é confiável?',
   'home.faq.a6':
-    'É. Nada aqui é escrito por qualquer pessoa: a curadoria é de professores e profissionais que trabalham com tecnologia todos os dias e escolhem o que vale o seu tempo.',
+    'É. Nada aqui é escrito por qualquer pessoa: a curadoria reúne profissionais de tecnologia de várias frentes, de programadores a CEOs, e professores e pesquisadores que testam as ferramentas a fundo e checam cada informação antes de compartilhar. O foco não está nas ferramentas, e sim na informação: que seja verdadeira, útil no dia a dia e que de fato importe.',
   'archive.title': 'Todas as edições',
   'archive.sub':
-    'Todas as edições publicadas, com fontes e referências. Curadoria de professores e profissionais de tecnologia.',
+    'Todas as edições publicadas, com fontes e referências. Curadoria de quem vive tecnologia no trabalho e na pesquisa.',
   'archive.empty': 'Nada por aqui ainda.',
   'archive.band.title': 'Não perca a próxima edição',
   'archive.band.body': 'Toda segunda, às 07:45, grátis e sem spam.',
@@ -86,13 +86,13 @@ export const copy = {
   'notfound.home': 'Ir para a home',
   'notfound.archive': 'Ver o arquivo',
   'footer.blurb':
-    'Novidades de tecnologia com curadoria de professores e profissionais. Toda segunda, às 07:45, direto no seu e-mail.',
+    'Novidades de tecnologia com curadoria de quem vive a área no trabalho e na pesquisa. Toda segunda, às 07:45, direto no seu e-mail.',
   'meta.home.title': 'introducing.news — Newsletter',
   'meta.home.description':
-    'Newsletter sobre o que acontece em tecnologia: novos modelos de IA, ferramentas recém-lançadas e as discussões da área. Curadoria de professores e profissionais.',
+    'Newsletter sobre o que acontece em tecnologia: novos modelos de IA, ferramentas recém-lançadas e as discussões da área. Curadoria de profissionais de tecnologia e de pesquisadores que testam a fundo e checam cada informação.',
   'meta.archive.title': 'Arquivo · introducing.news',
   'meta.archive.description': 'Todas as edições, com fontes e referências.',
-  'meta.rss.description': 'Novidades de tecnologia, curadas por professores e profissionais.',
+  'meta.rss.description': 'Novidades de tecnologia, curadas por profissionais da área e por quem pesquisa e testa.',
 } as const;
 
 export type CopyKey = keyof typeof copy;

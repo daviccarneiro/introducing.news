@@ -1,6 +1,6 @@
 # introducing.news
 
-Newsletter em português com curadoria de novidades de tecnologia: novos modelos de IA, ferramentas recém-lançadas, as discussões da área e os eventos que vêm por aí. Curadoria de professores e profissionais.
+Newsletter em português com curadoria de novidades de tecnologia: novos modelos de IA, ferramentas recém-lançadas, as discussões da área e os eventos que vêm por aí. Curadoria de profissionais de tecnologia e de pesquisadores da área.
 
 > Para agentes de código e manutenção (arquitetura, segredos, armadilhas e upgrades): veja [`AGENTS.md`](./AGENTS.md).
 
@@ -37,6 +37,8 @@ src/
 keystatic.config.ts        # CMS (coleções "Edições", "Autores" e "E-mails")
 scripts/email-template.mjs # template do e-mail (fonte de verdade)
 scripts/email-body.mjs     # converte o MDX do e-mail em HTML de e-mail
+scripts/welcome-email.mjs  # texto do e-mail de boas-vindas
+scripts/resend-welcome.mjs # publica template + automação de boas-vindas no Resend
 scripts/send-newsletter.mjs# disparo do Broadcast via Resend
 scripts/resend-template.mjs# sincroniza o template com o Resend
 scripts/publish-batch.mjs  # publica no site as edições programadas vencidas
@@ -92,6 +94,10 @@ Uma edição "Programada" entra no próximo **batch**: escolha a data no campo "
 O e-mail é uma versão reduzida da página (título + resumo + corpo escrito na coleção **E-mails** + botão + assinatura), com a **data da edição** no corpo e o assunto no formato `#N - assunto` (N é o número da edição, definido no CMS), e leva para a edição completa no site. O **conteúdo** é editado no CMS; o **formato** vem de `scripts/email-template.mjs` e `scripts/email-body.mjs`. Para pré-visualizar no painel do Resend, rode `npm run template:sync` (o envio sempre usa o HTML do repositório).
 
 O link "cancelar inscrição" leva para `/descadastrar`, onde a pessoa vê o que deixa de receber e confirma a saída — a remoção é feita pela API (`POST /api/unsubscribe`) no Resend.
+
+## Boas-vindas (automático)
+
+Quem se inscreve recebe um e-mail de agradecimento **5 minutos depois**, uma única vez, com o contexto da newsletter e quem está por trás dela. O texto vive em `scripts/welcome-email.mjs`; `npm run welcome:sync` publica o template e garante o evento `newsletter.subscribed` e a automação no Resend. Reinscrições não reenviam e quem descadastra antes dos 5 minutos não recebe.
 
 ## CMS em produção (Keystatic · modo GitHub) — opcional
 

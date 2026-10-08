@@ -5,7 +5,7 @@
 
 ## Visão geral
 
-Newsletter em português sobre tecnologia, com curadoria de **professores e profissionais**. O foco editorial: novos modelos de IA, ferramentas recém-lançadas, as discussões da área e os eventos que vêm por aí. Cada edição é publicada como página na web e enviada por e-mail. Domínio: `https://introducing.news` (Cloudflare Workers). Repositório: `daviccarneiro/introducing.news`.
+Newsletter em português sobre tecnologia, com curadoria de **profissionais de tecnologia e de pesquisadores da área**. O foco editorial: novos modelos de IA, ferramentas recém-lançadas, as discussões da área e os eventos que vêm por aí. Cada edição é publicada como página na web e enviada por e-mail. Domínio: `https://introducing.news` (Cloudflare Workers). Repositório: `daviccarneiro/introducing.news`.
 
 ## Stack
 
@@ -45,6 +45,8 @@ src/
 keystatic.config.ts        # CMS (coleções "Edições", "Autores" e "E-mails")
 scripts/email-template.mjs # fonte de verdade do layout do e-mail
 scripts/email-body.mjs     # converte o MDX do e-mail em HTML de e-mail
+scripts/welcome-email.mjs  # texto do e-mail de boas-vindas (5 min após inscrever)
+scripts/resend-welcome.mjs # publica template + evento + automação de boas-vindas
 scripts/send-newsletter.mjs# disparo de Broadcast
 scripts/resend-template.mjs# publica o template do e-mail no Resend
 scripts/publish-batch.mjs  # publica edições programadas vencidas (batch)
@@ -66,6 +68,7 @@ worker-configuration.d.ts  # tipos gerados (só nomes — pode ser commitado)
 | `npm run deploy` | build + `wrangler deploy` (uso local; em produção o CI faz) |
 | `node scripts/send-newsletter.mjs <slug> [--dry-run] [--preview]` | envia a edição por e-mail (`--preview` gera o HTML real no diretório temporário) |
 | `npm run template:sync` | publica/atualiza o template do e-mail no Resend (fonte: `scripts/email-template.mjs`) |
+| `npm run welcome:sync` | publica/atualiza template, evento e automação de boas-vindas no Resend |
 | `npm run publish:batch` | publica edições programadas vencidas e prontas (`--dry-run` simula; `--check` só informa) |
 
 Com segredos: `doppler run -p introducing-news -c dev_personal -- <comando>` (o `doppler.yaml` do repo já aponta para lá; nunca dependa do perfil global).
@@ -123,6 +126,7 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 - `scripts/email-template.mjs` é a fonte de verdade do layout do e-mail: HTML em tabelas, CSS inline, fontes de sistema e tokens de `tokens.css`, com fallback VML no botão (Gmail, Apple Mail, Outlook). `buildEmail()` monta o e-mail (cabeçalho + resumo + corpo + CTA + assinatura). É uma versão reduzida da página, com formatação própria — o HTML do site não é reutilizado.
 - **O que editar onde**: o conteúdo do e-mail vem da coleção **E-mails** (associada à edição por `edition`), em MDX; `scripts/email-body.mjs` converte para HTML de e-mail (estilos inline, imagens em URL absoluta). Assunto e preheader vêm do e-mail, com fallback para `title`/`description` da edição. Sem entrada na coleção, o envio usa a versão automática (título + resumo + CTA). O layout geral vive em `scripts/email-template.mjs`.
 - `npm run template:sync` espelha esse HTML como template publicado no Resend (preview/teste no painel). O envio **não** depende do painel: usa o HTML do repositório.
+- **Boas-vindas**: quem se inscreve recebe um e-mail 5 minutos depois, uma única vez. O texto vive em `scripts/welcome-email.mjs` (mesmo layout do e-mail da edição) e `npm run welcome:sync` publica o template `introducing-news-boas-vindas` e garante o evento `newsletter.subscribed` e a automação no Resend (evento → 5 min → envio). O Worker dispara o evento em `POST /api/subscribe` **apenas quando o contato é criado**; reinscrições (PATCH) não reenviam e contatos descadastrados são ignorados pelo Resend.
 - Para ver o e-mail real antes de enviar: `node scripts/send-newsletter.mjs <slug> --preview` grava o HTML no diretório temporário (sem enviar); o painel do Resend mostra o layout com os valores de fallback das variáveis.
 - `scripts/send-newsletter.mjs <slug> [--dry-run]`: monta o e-mail a partir do frontmatter (assinatura via `signature`) e cria um Broadcast com `send: true`. Só edições com `status: published` podem ser enviadas. Anti-duplicidade pelo nome `edição-<slug>`.
 - Assunto e kicker trazem a **data da edição** (`publishedAt`, ex.: "5 de outubro de 2026"); o assunto é `#N - assunto` (número da edição + assunto da coleção E-mails, com fallback no título).

@@ -13,6 +13,7 @@
     "deploy:staging": "npm run build && wrangler deploy --name introducing-news-staging",
     "newsletter": "node scripts/send-newsletter.mjs",
     "template:sync": "node scripts/resend-template.mjs",
+    "welcome:sync": "node scripts/resend-welcome.mjs",
     "publish:batch": "node scripts/publish-batch.mjs"
   },
   "dependencies": {
