@@ -54,7 +54,7 @@ export const welcomeVariables = {
   DESCRIPTION: 'Obrigado por assinar. Antes da próxima edição, um pouco sobre por que a introducing.news existe.',
   BODY: letterHtml,
   CTA_LABEL: 'Ler a última edição',
-  CTA_URL: `${SITE}/arquivo/`,
+  CTA_URL: `${SITE}/ultima`,
   SIGN_OFF: 'Um abraço,',
   SIGNATURE_AVATAR: avatarHtml(author, SITE),
   SIGNATURE_NAME: author.name,
@@ -63,7 +63,7 @@ export const welcomeVariables = {
     : '',
   FOOT_MESSAGE: 'Você recebe este e-mail porque se inscreveu na introducing.news.',
   UNSUBSCRIBE_LABEL: 'cancelar inscrição',
-  UNSUBSCRIBE_URL: '{{{RESEND_UNSUBSCRIBE_URL}}}',
+  UNSUBSCRIBE_URL: `${SITE}/descadastrar`,
   SITE_URL: SITE,
 };
 

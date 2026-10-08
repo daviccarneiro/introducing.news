@@ -1,9 +1,8 @@
 import { defineMiddleware } from 'astro:middleware';
 
 /**
- * Redireciona URLs antigas do período bilíngue para as rotas atuais.
- * Fica no middleware (e não em `_redirects`) porque o casamento com splat do
- * `_redirects` se mostrou imprevisível para caminhos compostos.
+ * Redireciona URLs antigas do período bilíngue (prefixo `/pt`) para as rotas atuais.
+ * O prefixo `/en` não é mais tratado — o site nunca foi divulgado em inglês.
  */
 export const onRequest = defineMiddleware((context, next) => {
   const { pathname } = context.url;
@@ -19,23 +18,25 @@ export const onRequest = defineMiddleware((context, next) => {
     pathname === '/pt/ensaios' ||
     pathname === '/pt/ensaios/' ||
     pathname === '/pt/arquivo' ||
-    pathname === '/pt/arquivo/' ||
-    pathname === '/en/essays' ||
-    pathname === '/en/essays/' ||
-    pathname.startsWith('/en/essays/')
+    pathname === '/pt/arquivo/'
   ) {
     return context.redirect('/arquivo/', 301);
   }
 
-  // Feeds antigos → /rss.xml
-  if (pathname === '/pt/rss.xml' || pathname === '/en/rss.xml') {
+  // Feed antigo → /rss.xml
+  if (pathname === '/pt/rss.xml') {
     return context.redirect('/rss.xml', 301);
   }
 
-  // Qualquer outra rota antiga com prefixo de idioma → home
-  if (pathname === '/pt' || pathname === '/en' || pathname.startsWith('/pt/') || pathname.startsWith('/en/')) {
+  // Qualquer outra rota antiga com prefixo /pt → home
+  if (pathname === '/pt' || pathname.startsWith('/pt/')) {
     return context.redirect('/', 301);
   }
 
-  return next();
+  // Staging não deve ser indexado (substitui a regra de resposta do Cloudflare).
+  const response = await next();
+  if (context.url.hostname === 'staging.introducing.news') {
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+  }
+  return response;
 });
