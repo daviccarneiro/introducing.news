@@ -36,12 +36,13 @@ src/
     arquivo/[...slug].astro# página da edição
     descadastrar.astro     # confirmação de descadastro (link do e-mail)
     rss.xml.ts             # feed RSS
+    ultima.ts              # 302 para a edição publicada mais recente
     api/subscribe.ts       # inscrição (valida, rate-limit, Turnstile, Resend)
     api/unsubscribe.ts     # descadastro (mesmas defesas; PATCH unsubscribed no Resend)
   components/              # SiteHeader, SiteFooter, PostCard, Cover, Badge, SubscribeForm
   lib/posts.ts             # consultas, autor da assinatura, readingTime, formatDate
   lib/api.ts               # json/clientIp/rate-limit/Turnstile compartilhados pelas APIs
-  middleware.ts            # 301 de URLs antigas (/pt/*, /en/* → rotas atuais)
+  middleware.ts            # 301 de URLs antigas (/pt/*) + noindex do staging (host)
 keystatic.config.ts        # CMS (coleções "Edições", "Autores" e "E-mails")
 scripts/email-template.mjs # fonte de verdade do layout do e-mail
 scripts/email-body.mjs     # converte o MDX do e-mail em HTML de e-mail
@@ -124,7 +125,7 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 - `scripts/email-template.mjs` é a fonte de verdade do layout do e-mail: HTML em tabelas, CSS inline, fontes de sistema e tokens de `tokens.css`, com fallback VML no botão (Gmail, Apple Mail, Outlook). `buildEmail()` monta o e-mail (cabeçalho + resumo + corpo + CTA + assinatura). É uma versão reduzida da página, com formatação própria — o HTML do site não é reutilizado.
 - **O que editar onde**: o conteúdo do e-mail vem da coleção **E-mails** (associada à edição por `edition`), em MDX; `scripts/email-body.mjs` converte para HTML de e-mail (estilos inline, imagens em URL absoluta). Assunto e preheader vêm do e-mail, com fallback para `title`/`description` da edição. Sem entrada na coleção, o envio usa a versão automática (título + resumo + CTA). O layout geral vive em `scripts/email-template.mjs`.
 - `npm run template:sync` espelha esse HTML como template publicado no Resend (preview/teste no painel). O envio **não** depende do painel: usa o HTML do repositório.
-- **Boas-vindas**: quem se inscreve recebe um e-mail 5 minutos depois, uma única vez. O texto vive em `scripts/welcome-email.mjs` (mesmo layout do e-mail da edição) e `npm run welcome:sync` publica o template `introducing-news-boas-vindas` e garante o evento `newsletter.subscribed` e a automação no Resend (evento → 5 min → envio). O site dispara o evento em `POST /api/subscribe` **apenas quando o contato é criado**; reinscrições (PATCH) não reenviam e contatos descadastrados são ignorados pelo Resend.
+- **Boas-vindas**: quem se inscreve recebe um e-mail 5 minutos depois, uma única vez. O texto vive em `scripts/welcome-email.mjs` (mesmo layout do e-mail da edição) e `npm run welcome:sync` publica o template `introducing-news-boas-vindas` e garante o evento `newsletter.subscribed` e a automação no Resend (evento → 5 min → envio). O site dispara o evento em `POST /api/subscribe` **apenas quando o contato é criado**; reinscrições (PATCH) não reenviam e contatos descadastrados são ignorados pelo Resend. O CTA do e-mail aponta para `/ultima` (302 → edição mais recente) e o "cancelar inscrição" para `/descadastrar` — nunca use `{{{RESEND_UNSUBSCRIBE_URL}}}` como valor de variável (a substituição não é aninhada e o link fica quebrado).
 - Para ver o e-mail real antes de enviar: `node scripts/send-newsletter.mjs <slug> --preview` grava o HTML no diretório temporário (sem enviar); o painel do Resend mostra o layout com os valores de fallback das variáveis.
 - `scripts/send-newsletter.mjs <slug> [--dry-run]`: monta o e-mail a partir do frontmatter (assinatura via `signature`) e cria um Broadcast com `send: true`. Só edições com `status: published` podem ser enviadas. Anti-duplicidade pelo nome `edição-<slug>`.
 - Assunto e kicker trazem a **data da edição** (`publishedAt`, ex.: "5 de outubro de 2026"); o assunto é `#N - assunto` (número da edição + assunto da coleção E-mails, com fallback no título).
@@ -137,11 +138,11 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 - Push na `main` → **Netlify Git integration**: build (`npm run build`) + deploy automáticos. Projeto `introducing-news` (site id `01f3f0c5-38b4-42da-8f75-bdf5fdbd5bb8`).
 - Workflow **Publicar batch**: acionado por commits em `src/content/posts/**` e por cron (toda segunda, 07:45 BRT); só age quando há edição programada, vencida e completa (ver "Conteúdo"). O push na `main` dispara o build da Netlify.
 - O site é servido por uma **SSR Function** (rotas de API e Keystatic) e uma **Middleware Edge Function** (redirects de `/pt` e `/en`).
-- **DNS (Cloudflare, cinza/DNS-only — fora do repo)**: apex `introducing.news` → A `75.2.60.5` (load balancer da Netlify; **sem AAAA** — o LB não tem IPv6); `www` e `cms` → CNAME `introducing-news.netlify.app`. O domínio é registrado na Cloudflare Registrar (a zona **não** pode ser apagada nem usar nameservers externos).
+- **DNS (Cloudflare, cinza/DNS-only — fora do repo)**: apex `introducing.news` → A `75.2.60.5` (load balancer da Netlify; **sem AAAA** — o LB não tem IPv6); `www` e `cms` → CNAME `introducing-news.netlify.app`; `staging` → CNAME `introducing-news-staging.netlify.app`. O domínio é registrado na Cloudflare Registrar (a zona **não** pode ser apagada nem usar nameservers externos). A Cloudflare guarda **apenas o DNS e o Turnstile** deste projeto — os Workers e as regras de zona foram removidos.
 - **Canônico / `www`**: o host canônico é o apex `https://introducing.news`; `www` → **301** para o apex (regra `[[redirects]]` no `netlify.toml`, preserva path e query).
 - **CMS**: `https://cms.introducing.news` → 302 para `https://introducing.news/keystatic` (regra no `netlify.toml`). O login do GitHub fica no domínio principal — por isso é redirect, e não um domínio próprio.
 - URLs antigas de quando o site era bilíngue redirecionam 301 pelo `src/middleware.ts` (`/pt/*`, `/en/*` → rotas atuais), que roda na Edge Function.
-- **Staging (pendente)**: o Worker `introducing-news-staging` + `staging.introducing.news` ainda existem na Cloudflare (IPs ruins para parte das ISPs). Migrar para um **branch deploy** da Netlify ou remover quando não for mais usado.
+- **Staging**: site separado `introducing-news-staging` na Netlify (id `88aaba5f-7179-4921-b928-2d2f6f85c9e9`), em `https://staging.introducing.news` (DNS grey → `introducing-news-staging.netlify.app`). Tem `RESEND_API_KEY`, `RESEND_SEGMENT_ID` (segmento **staging** no Resend — contatos de teste não entram na audiência real) e `TURNSTILE_SECRET_KEY` próprios; sem `KEYSTATIC_*` o CMS não funciona lá. O `X-Robots-Tag: noindex, nofollow` é aplicado pelo `src/middleware.ts` (host `staging.introducing.news`). Deploy manual (MCP `deploy-site` ou `netlify deploy --site introducing-news-staging --prod`).
 
 ## Armadilhas conhecidas (aprendidas na prática)
 
