@@ -29,17 +29,17 @@ export const copy = {
   'home.cta.browse': 'Ver arquivo',
   'home.faq.title': 'Perguntas frequentes',
   'home.faq.q1': 'É de graça mesmo?',
-  'home.faq.a1': 'É. A assinatura é gratuita, sem cartão e sem versão paga escondida. Se um dia mudar, avisamos antes.',
+  'home.faq.a1': 'É. A newsletter é gratuita: assine com seu e-mail e receba as edições toda segunda, sem pagar nada.',
   'home.faq.q2': 'Não gosto de spam.',
   'home.faq.a2':
-    'Nós também. Um e-mail por semana, toda segunda, com o que realmente importa, e descadastro em um clique.',
+    'Nós também. Um e-mail por semana, toda segunda, com o que realmente importa, e descadastro quando quiser.',
   'home.faq.q3': 'Se todas as edições estão aqui, por que assinar?',
   'home.faq.a3':
     'Porque nem tudo vai para o site. Assinantes recebem um TLDR com notas, bastidores, fontes extras e avisos de eventos que não entram no arquivo público.',
   'home.faq.q4': 'Quando chegam os e-mails?',
   'home.faq.a4': 'Toda segunda-feira, às 07:45 (horário de Brasília).',
   'home.faq.q5': 'Posso cancelar quando quiser?',
-  'home.faq.a5': 'Sim. Todo e-mail tem um link de cancelamento; é um clique e não perguntamos nada.',
+  'home.faq.a5': 'Sim. Todo e-mail tem um link de cancelamento: você confirma a saída em uma página simples e pronto.',
   'archive.title': 'Todas as edições',
   'archive.sub':
     'Todas as edições publicadas, com fontes e referências. Curadoria de professores e profissionais de tecnologia.',
