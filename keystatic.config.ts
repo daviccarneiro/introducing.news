@@ -62,6 +62,10 @@ const authorSchema = {
     label: 'Cargo / linha de assinatura',
     description: 'Aparece abaixo do nome na assinatura do e-mail (opcional).',
   }),
+  linkedin: fields.url({
+    label: 'LinkedIn',
+    description: 'URL do perfil. Aparece ao lado do nome no site (opcional).',
+  }),
   photo: fields.image({
     label: 'Foto',
     description: 'Usada no e-mail e no site. Prefira uma imagem quadrada com fundo neutro.',

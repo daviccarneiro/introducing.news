@@ -26,6 +26,8 @@ const authors = defineCollection({
     name: z.string(),
     /** Linha exibida abaixo do nome na assinatura do e-mail. */
     role: z.string().optional(),
+    /** URL do perfil no LinkedIn (opcional). */
+    linkedin: z.string().optional(),
     /** Caminho público da foto (ex.: `/images/authors/foo.jpg`). */
     photo: z.string().optional(),
   }),

@@ -66,18 +66,39 @@ const ogImage =
                     {initialsOf(author.data.name)}
                   </span>
                 )}
-                <p>{author.data.name}, {readingTime(post)} {t('post.minRead')}</p>
+                <div class="post-head__author-info">
+                  <p class="post-head__author-name">
+                    {author.data.name}
+                    {
+                      author.data.linkedin && (
+                        <a
+                          class="author-linkedin"
+                          href={author.data.linkedin}
+                          target="_blank"
+                          rel="noopener"
+                          aria-label={t('author.linkedin', { name: author.data.name })}
+                        >
+                          <img src="/icons/linkedin.svg" width="16" height="16" alt="" aria-hidden="true" />
+                        </a>
+                      )
+                    }
+                  </p>
+                  <p class="meta">{readingTime(post)} {t('post.minRead')}</p>
+                </div>
               </div>
               <div class="post-head__share">
-                <a href={whatsappShare} target="_blank" rel="noopener" aria-label={t('post.share.whatsapp')}>
-                  <img src="/icons/whatsapp.svg" width="18" height="18" alt="" aria-hidden="true" />
-                </a>
-                <a href={linkedinShare} target="_blank" rel="noopener" aria-label={t('post.share.linkedin')}>
-                  <img src="/icons/linkedin-share.svg" width="18" height="18" alt="" aria-hidden="true" />
-                </a>
-                <a href={xShare} target="_blank" rel="noopener" aria-label={t('post.share.x')}>
-                  <img src="/icons/x.svg" width="18" height="18" alt="" aria-hidden="true" />
-                </a>
+                <p class="post-head__share-label">{t('post.share.label')}</p>
+                <div class="post-head__share-icons">
+                  <a href={whatsappShare} target="_blank" rel="noopener" aria-label={t('post.share.whatsapp')}>
+                    <img src="/icons/whatsapp.svg" width="18" height="18" alt="" aria-hidden="true" />
+                  </a>
+                  <a href={linkedinShare} target="_blank" rel="noopener" aria-label={t('post.share.linkedin')}>
+                    <img src="/icons/linkedin-share.svg" width="18" height="18" alt="" aria-hidden="true" />
+                  </a>
+                  <a href={xShare} target="_blank" rel="noopener" aria-label={t('post.share.x')}>
+                    <img src="/icons/x.svg" width="18" height="18" alt="" aria-hidden="true" />
+                  </a>
+                </div>
               </div>
             </div>
           )
@@ -181,12 +202,49 @@ const ogImage =
     gap: var(--space-3);
   }
 
-  .post-head__author p {
-    font: 400 14px/1.5 var(--font-sans);
-    color: var(--muted-foreground);
+  .post-head__author-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .post-head__author-name {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
+    font: 500 15px/1.4 var(--font-sans);
+    color: var(--foreground);
+  }
+
+  .author-linkedin {
+    display: inline-flex;
+  }
+
+  .author-linkedin img {
+    display: block;
+    opacity: 0.65;
+    transition: opacity 0.15s ease;
+  }
+
+  .author-linkedin:hover img {
+    opacity: 1;
   }
 
   .post-head__share {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: var(--space-2);
+  }
+
+  .post-head__share-label {
+    font: 500 11px/1.4 var(--font-mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+
+  .post-head__share-icons {
     display: flex;
     align-items: center;
     gap: var(--space-4);

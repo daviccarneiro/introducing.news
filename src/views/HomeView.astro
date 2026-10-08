@@ -16,6 +16,7 @@ const faqs = [
   { q: t('home.faq.q3'), a: t('home.faq.a3') },
   { q: t('home.faq.q4'), a: t('home.faq.a4') },
   { q: t('home.faq.q5'), a: t('home.faq.a5') },
+  { q: t('home.faq.q6'), a: t('home.faq.a6') },
 ];
 ---
 
@@ -76,7 +77,6 @@ const faqs = [
     </script>
     <p class="hero__sub">{t('home.sub')}</p>
     <SubscribeForm id="assinar-form" />
-    <p class="meta">{t('home.micro')}</p>
   </section>
 
   {
@@ -113,7 +113,20 @@ const faqs = [
                       </span>
                     )}
                     <div class="featured__author-info">
-                      <p class="featured__name">{featuredAuthor.data.name}</p>
+                      <p class="featured__name">
+                        {featuredAuthor.data.name}
+                        {featuredAuthor.data.linkedin && (
+                          <a
+                            class="author-linkedin"
+                            href={featuredAuthor.data.linkedin}
+                            target="_blank"
+                            rel="noopener"
+                            aria-label={t('author.linkedin', { name: featuredAuthor.data.name })}
+                          >
+                            <img src="/icons/linkedin.svg" width="16" height="16" alt="" aria-hidden="true" />
+                          </a>
+                        )}
+                      </p>
                       <p class="meta featured__byline">
                         <span class="featured__date">{formatDate(featured.data.publishedAt)}</span>
                         <span aria-hidden="true">·</span>
@@ -136,28 +149,6 @@ const faqs = [
       </section>
     )
   }
-
-  <section class="cta container">
-    <div class="cta__band">
-      <div class="cta__content">
-        <h2>{t('home.cta.title')}</h2>
-        <p>{t('home.cta.body')}</p>
-        <div class="cta__actions">
-          <a
-            class="button button--accent"
-            href="https://www.linkedin.com/in/daviccarneiro/"
-            target="_blank"
-            rel="noopener"
-          >
-            {t('home.cta.linkedin')}
-            <img src="/icons/arrow-right-accent.svg" width="16" height="16" alt="" aria-hidden="true" />
-          </a>
-          <a class="button button--ghost-inverse" href="/arquivo/">{t('home.cta.browse')}</a>
-        </div>
-      </div>
-      <img class="cta__doodle" src="/icons/sparkle.svg" width="40" height="40" alt="" aria-hidden="true" />
-    </div>
-  </section>
 
   <section class="faq container" id="faq">
     <h2>{t('home.faq.title')}</h2>
@@ -339,7 +330,24 @@ const faqs = [
   }
 
   .featured__name {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-2);
     font: 500 17px/1.4 var(--font-sans);
+  }
+
+  .author-linkedin {
+    display: inline-flex;
+  }
+
+  .author-linkedin img {
+    display: block;
+    opacity: 0.65;
+    transition: opacity 0.15s ease;
+  }
+
+  .author-linkedin:hover img {
+    opacity: 1;
   }
 
   .featured__byline {
@@ -378,44 +386,6 @@ const faqs = [
     text-decoration: none;
   }
 
-  .cta {
-    padding-block: var(--space-20) var(--space-6);
-  }
-
-  .cta__band {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--space-8);
-    background: var(--primary);
-    color: var(--primary-foreground);
-    border-radius: var(--radius-xl);
-    padding: var(--space-10);
-  }
-
-  .cta__content {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-    max-width: 560px;
-  }
-
-  .cta__content h2 {
-    font: 600 28px/1.22 var(--font-serif);
-    letter-spacing: -0.01em;
-  }
-
-  .cta__content p {
-    color: var(--ink-400);
-    max-width: 460px;
-  }
-
-  .cta__actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-4);
-  }
-
   .button {
     display: inline-flex;
     align-items: center;
@@ -432,27 +402,6 @@ const faqs = [
     border: 1px solid var(--border);
     background: var(--card);
     color: var(--foreground);
-  }
-
-  .button--accent {
-    height: 48px;
-    padding-inline: var(--space-5);
-    background: var(--accent);
-    color: var(--accent-foreground);
-    font-size: 15px;
-    transition: background 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
-  }
-
-  .button--accent:hover {
-    background: var(--accent-600);
-    transform: translateY(-1px);
-    box-shadow: var(--shadow-sm);
-  }
-
-  .button--ghost-inverse {
-    height: 40px;
-    padding-inline: var(--space-4);
-    color: var(--primary-foreground);
   }
 
   .faq {
@@ -505,16 +454,6 @@ const faqs = [
     max-width: 1080px;
     text-wrap: balance;
     padding-bottom: var(--space-5);
-  }
-
-  @media (min-width: 768px) {
-    .cta__band {
-      flex-direction: row;
-      align-items: center;
-      justify-content: space-between;
-      gap: var(--space-12);
-      padding: var(--space-16);
-    }
   }
 
   @media (min-width: 1000px) {

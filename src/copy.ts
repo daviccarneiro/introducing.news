@@ -18,15 +18,10 @@ export const copy = {
   'home.title.before': 'O que importa em',
   'home.title.line2': 'sem exagero',
   'home.sub':
-    'Novos modelos de IA, ferramentas recém-lançadas e as discussões que movem a área. Curadoria de professores e profissionais com anos de experiência. E os eventos que vêm por aí.',
-  'home.micro': 'Grátis, sem spam, cancele quando quiser.',
+    'Para quem quer ficar em dia com tecnologia sem passar horas pesquisando: novidades de IA, ferramentas recém-lançadas e as discussões da área, curadas por professores e profissionais que vivem tecnologia.',
   'home.latest.title': 'Última edição',
   'home.latest.link': 'Ler edição completa',
   'home.seeAll': 'Ver todas as edições',
-  'home.cta.title': 'A conversa continua no LinkedIn.',
-  'home.cta.body': 'Publico notas, fontes e o que estou lendo entre as edições.',
-  'home.cta.linkedin': 'Seguir no LinkedIn',
-  'home.cta.browse': 'Ver arquivo',
   'home.faq.title': 'Perguntas frequentes',
   'home.faq.q1': 'É de graça mesmo?',
   'home.faq.a1': 'É. A newsletter é gratuita: assine com seu e-mail e receba as edições toda segunda, sem pagar nada.',
@@ -40,6 +35,9 @@ export const copy = {
   'home.faq.a4': 'Toda segunda-feira, às 07:45 (horário de Brasília).',
   'home.faq.q5': 'Posso cancelar quando quiser?',
   'home.faq.a5': 'Sim. Todo e-mail tem um link de cancelamento: você confirma a saída em uma página simples e pronto.',
+  'home.faq.q6': 'O conteúdo é confiável?',
+  'home.faq.a6':
+    'É. Nada aqui é escrito por qualquer pessoa: a curadoria é de professores e profissionais que trabalham com tecnologia todos os dias e escolhem o que vale o seu tempo.',
   'archive.title': 'Todas as edições',
   'archive.sub':
     'Todas as edições publicadas, com fontes e referências. Curadoria de professores e profissionais de tecnologia.',
@@ -49,6 +47,8 @@ export const copy = {
   'post.back': '← Voltar ao arquivo',
   'post.editionLabel': 'Edição',
   'post.minRead': 'min de leitura',
+  'post.share.label': 'Compartilhe',
+  'author.linkedin': 'LinkedIn de {name}',
   'post.share.whatsapp': 'Compartilhar no WhatsApp',
   'post.share.linkedin': 'Compartilhar no LinkedIn',
   'post.share.x': 'Compartilhar no X',
@@ -87,7 +87,6 @@ export const copy = {
   'notfound.archive': 'Ver o arquivo',
   'footer.blurb':
     'Novidades de tecnologia com curadoria de professores e profissionais. Toda segunda, às 07:45, direto no seu e-mail.',
-  'footer.madeBy': 'Feito por',
   'meta.home.title': 'introducing.news — Newsletter',
   'meta.home.description':
     'Newsletter sobre o que acontece em tecnologia: novos modelos de IA, ferramentas recém-lançadas e as discussões da área. Curadoria de professores e profissionais.',
