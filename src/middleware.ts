@@ -4,7 +4,7 @@ import { defineMiddleware } from 'astro:middleware';
  * Redireciona URLs antigas do período bilíngue (prefixo `/pt`) para as rotas atuais.
  * O prefixo `/en` não é mais tratado — o site nunca foi divulgado em inglês.
  */
-export const onRequest = defineMiddleware((context, next) => {
+export const onRequest = defineMiddleware(async (context, next) => {
   const { pathname } = context.url;
 
   // /pt/ensaios/<slug> e /pt/arquivo/<slug> → /arquivo/<slug>
