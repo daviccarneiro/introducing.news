@@ -8,7 +8,7 @@ signature: davi-carneiro
 status: published
 ---
 
-Durante dois anos, a habilidade mais valorizada era escrever o prompt certo. Em 2026, isso virou commodity: qualquer modelo razoável responde bem a pedidos razoáveis. A diferença passou para outro lugar — o desenho do sistema em volta do modelo.
+Durante dois anos, a habilidade mais valorizada era escrever o prompt certo. Em 2026, isso virou commodity: qualquer modelo razoável responde bem a pedidos razoáveis. A diferença passou para outro lugar: o desenho do sistema em volta do modelo.
 
 ## O prompt era só o começo
 
@@ -19,7 +19,7 @@ Quando a resposta precisa ser confiável, o prompt deixa de ser o artefato princ
 ## Cinco camadas, um mapa
 
 1. **Contrato:** defina entradas e saídas antes de escolher o modelo.
-2. **Geração:** uma chamada, um objetivo — nada de prompts que fazem tudo.
+2. **Geração:** uma chamada, um objetivo, nada de prompts que fazem tudo.
 3. **Verificação:** valide estrutura e fatos antes de usar a resposta.
 4. **Fallback:** humano no loop quando a confiança cai do limiar.
 5. **Observabilidade:** registre cada tentativa, custo e latência.
@@ -34,4 +34,4 @@ const pipeline = await build({
 
 ## O que fica
 
-A vantagem competitiva deixa de ser a esperteza do pedido e passa a ser a arquitetura da operação. Quem trata o modelo como um componente — com contrato, teste e plano de falha — entrega mais e sofre menos. O resto é sorte com temperatura alta.
+A vantagem competitiva deixa de ser a esperteza do pedido e passa a ser a arquitetura da operação. Quem trata o modelo como um componente, com contrato, teste e plano de falha, entrega mais e sofre menos. O resto é sorte com temperatura alta.

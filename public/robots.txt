@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+
+Disallow: /api/
+Disallow: /descadastrar
+
+Sitemap: https://introducing.news/sitemap.xml

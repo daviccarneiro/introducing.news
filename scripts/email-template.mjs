@@ -18,7 +18,7 @@ export const MONO = "'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Cons
 /** Logo em PNG (clientes de e-mail não renderizam SVG); servido de `public/`. */
 const LOGO = '{{{SITE_URL}}}/images/brand/sparkle.png';
 
-export const TEMPLATE_NAME = 'introducing.news — nova edição';
+export const TEMPLATE_NAME = 'introducing.news · nova edição';
 export const TEMPLATE_ALIAS = 'introducing-news-nova-edicao';
 export const TEMPLATE_SUBJECT = 'Nova edição da introducing.news';
 
@@ -153,7 +153,7 @@ export function renderText(values) {
     '',
     `${values.CTA_LABEL}: ${values.CTA_URL}`,
     '',
-    `${values.SIGN_OFF} ${values.SIGNATURE_NAME}${values.SIGNATURE_ROLE_TEXT ? ` — ${values.SIGNATURE_ROLE_TEXT}` : ''}`,
+    `${values.SIGN_OFF} ${values.SIGNATURE_NAME}${values.SIGNATURE_ROLE_TEXT ? `, ${values.SIGNATURE_ROLE_TEXT}` : ''}`,
     '',
     values.FOOT_MESSAGE,
     `introducing.news · ${values.UNSUBSCRIBE_LABEL}: ${values.UNSUBSCRIBE_URL}`,

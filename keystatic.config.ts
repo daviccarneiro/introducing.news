@@ -24,9 +24,9 @@ const postSchema = {
   cover: fields.select({
     label: 'Capa',
     options: [
-      { label: 'Fig. 01 — grade + órbita', value: 'fig-01' },
-      { label: 'Fig. 02 — arcos', value: 'fig-02' },
-      { label: 'Fig. 03 — sinal', value: 'fig-03' },
+      { label: 'Fig. 01 · grade + órbita', value: 'fig-01' },
+      { label: 'Fig. 02 · arcos', value: 'fig-02' },
+      { label: 'Fig. 03 · sinal', value: 'fig-03' },
     ],
     defaultValue: 'fig-01',
   }),

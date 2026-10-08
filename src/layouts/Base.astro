@@ -8,13 +8,17 @@ interface Props {
   title?: string;
   description?: string;
   type?: 'website' | 'article';
+  /** Imagem de Open Graph/Twitter; sem ela, usa a padrão do site. */
+  image?: string;
+  noindex?: boolean;
 }
 
-const { title, description, type = 'website' } = Astro.props;
+const { title, description, type = 'website', image, noindex = false } = Astro.props;
 const site = Astro.site ?? new URL('https://introducing.news');
 const canonical = new URL(Astro.url.pathname, site);
 const pageTitle = title ?? t('meta.home.title');
 const pageDescription = description ?? t('meta.home.description');
+const ogImage = new URL(image ?? '/images/og-default.png', site).href;
 const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
 ---
 
@@ -25,6 +29,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>{pageTitle}</title>
     <meta name="description" content={pageDescription} />
+    {noindex && <meta name="robots" content="noindex, nofollow" />}
     <link rel="canonical" href={canonical.href} />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
     <link rel="alternate" type="application/rss+xml" title="introducing.news" href="/rss.xml" />
@@ -35,7 +40,12 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     <meta property="og:description" content={pageDescription} />
     <meta property="og:url" content={canonical.href} />
     <meta property="og:locale" content="pt_BR" />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={pageTitle} />
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:image" content={ogImage} />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

@@ -19,9 +19,19 @@ const linkedinShare = `https://www.linkedin.com/sharing/share-offsite/?url=${enc
 const whatsappShare = `https://wa.me/?text=${encodeURIComponent(`${post.data.title} ${postUrl}`)}`;
 const xShare = `https://twitter.com/intent/tweet?url=${encodeURIComponent(postUrl)}&text=${encodeURIComponent(post.data.title)}`;
 const author = await getAuthor(post);
+const coverImage = post.data.coverImage;
+const ogImage =
+  coverImage && !coverImage.toLowerCase().endsWith('.svg')
+    ? new URL(coverImage, Astro.site ?? Astro.url).href
+    : undefined;
 ---
 
-<Base title={`${post.data.title} — introducing.news`} description={post.data.description} type="article">
+<Base
+  title={`${post.data.title} · introducing.news`}
+  description={post.data.description}
+  type="article"
+  image={ogImage}
+>
   <article>
     <header class="post-head container">
       <div class="post-head__inner">
