@@ -12,7 +12,8 @@
     "newsletter": "node scripts/send-newsletter.mjs",
     "template:sync": "node scripts/resend-template.mjs",
     "welcome:sync": "node scripts/resend-welcome.mjs",
-    "publish:batch": "node scripts/publish-batch.mjs"
+    "publish:batch": "node scripts/publish-batch.mjs",
+    "analytics:sync": "node scripts/analytics-snapshot.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^8.0.3",

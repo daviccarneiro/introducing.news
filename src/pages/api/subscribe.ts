@@ -6,20 +6,30 @@ import { clientIp, isRateLimited, json, verifyTurnstile } from '../../lib/api';
 
 const RATE_LIMIT = { scope: 'subscribe', max: 5, windowSeconds: 600 };
 
+/** Texto de origem da inscrição, sem caracteres de controle e com limite. */
+const cleanText = (value: unknown, max: number) =>
+  typeof value === 'string' ? value.replace(/[\u0000-\u001f\u007f]/g, '').trim().slice(0, max) : '';
+
 export const POST: APIRoute = async ({ request }) => {
   let email = '';
   let consent = false;
   let turnstileToken = '';
+  let referrer = '';
+  let utm = '';
 
   try {
     const data = (await request.json()) as {
       email?: unknown;
       consent?: unknown;
       turnstileToken?: unknown;
+      referrer?: unknown;
+      utm?: unknown;
     };
     email = typeof data?.email === 'string' ? data.email.trim().toLowerCase() : '';
     consent = data?.consent === true;
     turnstileToken = typeof data?.turnstileToken === 'string' ? data.turnstileToken : '';
+    referrer = cleanText(data?.referrer, 200);
+    utm = cleanText(data?.utm, 300);
   } catch {
     return json({ error: 'Requisição inválida.' }, 400);
   }
@@ -58,13 +68,18 @@ export const POST: APIRoute = async ({ request }) => {
     'Content-Type': 'application/json',
   };
 
+  const properties: Record<string, string | null> = {
+    locale: 'pt',
+    consent_at: new Date().toISOString(),
+  };
+  // Origem da primeira inscrição (atribuição sem cookie): guardada só se vier.
+  if (referrer) properties.signup_referrer = referrer;
+  if (utm) properties.signup_utm = utm;
+
   const payload = {
     email,
     unsubscribed: false,
-    properties: {
-      locale: 'pt',
-      consent_at: new Date().toISOString(),
-    },
+    properties,
     segments: [{ id: segmentId }],
   };
 
@@ -101,7 +116,13 @@ export const POST: APIRoute = async ({ request }) => {
       headers,
       body: JSON.stringify({
         unsubscribed: payload.unsubscribed,
-        properties: payload.properties,
+        // Reinscrição: limpa a data de descadastro anterior (churn) e atualiza
+        // o consentimento; a origem original (signup_*) é preservada.
+        properties: {
+          locale: payload.properties.locale,
+          consent_at: payload.properties.consent_at,
+          unsubscribed_at: null,
+        },
         segments: payload.segments,
       }),
     });

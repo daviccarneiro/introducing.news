@@ -70,7 +70,12 @@ export const POST: APIRoute = async ({ request }) => {
   const response = await fetch(`https://api.resend.com/contacts/${contact.id}`, {
     method: 'PATCH',
     headers,
-    body: JSON.stringify({ unsubscribed: true }),
+    body: JSON.stringify({
+      unsubscribed: true,
+      // Data do descadastro: é o que permite montar a série de churn no
+      // snapshot de analytics (a property precisa existir no Resend).
+      properties: { unsubscribed_at: new Date().toISOString() },
+    }),
   });
   if (!response.ok) {
     console.error('unsubscribe: falha no Resend', response.status, await response.text());

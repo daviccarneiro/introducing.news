@@ -259,6 +259,15 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
       status.hidden = true;
 
       try {
+        const params = new URLSearchParams(window.location.search);
+        const utm = ['utm_source', 'utm_medium', 'utm_campaign']
+          .flatMap((key) => {
+            const value = params.get(key)?.trim();
+            return value ? [`${key}=${value}`] : [];
+          })
+          .join('&')
+          .slice(0, 300);
+
         const response = await fetch('/api/subscribe', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -267,6 +276,8 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
             consent: true,
             turnstileToken:
               turnstileInput instanceof HTMLInputElement ? turnstileInput.value : '',
+            referrer: document.referrer.slice(0, 200),
+            utm,
           }),
         });
         if (response.ok) {

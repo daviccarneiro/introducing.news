@@ -1,0 +1,46 @@
+name: Analytics
+
+on:
+  schedule:
+    # Segundas, 08:30 America/Sao_Paulo (UTC-3), depois do batch (07:45).
+    - cron: '30 11 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: analytics
+  cancel-in-progress: false
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - name: Install
+        run: npm ci
+      - name: Verificar configuração do Google
+        id: config
+        env:
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+        run: |
+          if [ -z "$GOOGLE_SHEET_ID" ] || [ -z "$GOOGLE_SERVICE_ACCOUNT_JSON" ]; then
+            echo "configured=no" >> "$GITHUB_OUTPUT"
+            echo "Analytics ainda não configurado (GOOGLE_SHEET_ID/GOOGLE_SERVICE_ACCOUNT_JSON ausentes) — nada a fazer." >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "configured=yes" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Snapshot para o Google Sheets
+        if: steps.config.outputs.configured == 'yes'
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_SEGMENT_ID: ${{ secrets.RESEND_SEGMENT_ID }}
+          GOOGLE_SHEET_ID: ${{ secrets.GOOGLE_SHEET_ID }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+        run: node scripts/analytics-snapshot.mjs

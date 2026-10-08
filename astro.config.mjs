@@ -24,6 +24,9 @@ export default defineConfig({
       // qualquer hospedagem; só o `siteverify` é chamado pelo servidor.
       TURNSTILE_SECRET_KEY: envField.string({ context: 'server', access: 'secret', optional: true }),
       PUBLIC_TURNSTILE_SITE_KEY: envField.string({ context: 'client', access: 'public', optional: true }),
+      // Google Tag Manager (carrega Clarity e demais tags). Só em produção:
+      // sem a variável nenhum script de terceiro é injetado (dev/staging).
+      PUBLIC_GTM_ID: envField.string({ context: 'client', access: 'public', optional: true }),
     },
   },
   // `middlewareMode: 'edge'` faz o middleware (redirects de /pt e /en) rodar em

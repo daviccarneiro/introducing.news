@@ -124,7 +124,9 @@ if (!data.title || !data.description) {
 }
 
 const author = await loadAuthor(data.signature);
-const url = `${SITE}/arquivo/${slug}/`;
+// UTM no CTA: atribui a origem das inscrições feitas a partir do e-mail
+// (o formulário guarda signup_utm no contato — ver "Analytics" no AGENTS.md).
+const url = `${SITE}/arquivo/${slug}/?utm_source=newsletter&utm_medium=email&utm_campaign=edicao-${slug}`;
 const dateLabel = new Intl.DateTimeFormat('pt-BR', {
   day: 'numeric',
   month: 'long',

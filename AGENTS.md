@@ -18,7 +18,8 @@ Newsletter em português sobre tecnologia, com curadoria de **profissionais de t
 | Anti-bot | Cloudflare Turnstile | widget no formulário + `siteverify` no servidor (independente de onde o site roda) |
 | Segredos | Doppler (`introducing-news/dev_personal`) + Netlify env vars + GitHub secrets | nunca em arquivo versionado |
 | CI/CD | Netlify Git integration | build/deploy automático a cada push na `main` |
-| Design | Figma "introducing.news — Design" | tokens espelhados em `src/styles/tokens.css` |
+| Analytics | GTM (+ Clarity), tracking do Resend e snapshot p/ Google Sheets | dashboard no Looker Studio; heatmap no Clarity |
+| Design | Figma "introducing.news — Design" | tokens espelhados em `src/styles/tokens.css`; guia para IA em `DESIGN.md` (+ `design/` e assets em `public/brand/`) |
 
 ## Estrutura
 
@@ -51,6 +52,8 @@ scripts/resend-welcome.mjs # publica template + evento + automação de boas-vin
 scripts/send-newsletter.mjs# disparo de Broadcast
 scripts/resend-template.mjs# publica o template do e-mail no Resend
 scripts/publish-batch.mjs  # publica edições programadas vencidas (batch)
+scripts/analytics-snapshot.mjs # métricas do Resend → Google Sheets (Looker)
+scripts/google-sheets.mjs  # cliente mínimo do Sheets (service account/JWT)
 public/_headers            # headers de segurança (CSP, HSTS, nosniff…)
 public/images/brand/       # logo em PNG para o e-mail (clientes não renderizam SVG)
 netlify.toml               # build + redirects (www→apex 301, cms→/keystatic 302)
@@ -69,6 +72,7 @@ netlify.toml               # build + redirects (www→apex 301, cms→/keystatic
 | `npm run template:sync` | publica/atualiza o template do e-mail no Resend (fonte: `scripts/email-template.mjs`) |
 | `npm run welcome:sync` | publica/atualiza template, evento e automação de boas-vindas no Resend |
 | `npm run publish:batch` | publica edições programadas vencidas e prontas (`--dry-run` simula; `--check` só informa) |
+| `npm run analytics:sync` | grava o snapshot de métricas (Resend → Google Sheets); `--dry-run` gera CSVs no temporário sem tocar no Google |
 
 Com segredos: `doppler run -p introducing-news -c dev_personal -- <comando>` (o `doppler.yaml` do repo já aponta para lá; nunca dependa do perfil global).
 
@@ -85,6 +89,9 @@ Nunca commite valores. O repositório é público.
 | `PUBLIC_KEYSTATIC_GITHUB_APP_SLUG` | Doppler, Netlify env, `.env` local | liga o modo GitHub do Keystatic (vai inline no bundle; é público) |
 | `TURNSTILE_SECRET_KEY` | Doppler, Netlify env, `.env` local | `siteverify` do Turnstile |
 | `PUBLIC_TURNSTILE_SITE_KEY` | Doppler, Netlify env, `.env` local | widget no navegador (público) |
+| `PUBLIC_GTM_ID` | Netlify env (produção), `.env` local | ID do contêiner do GTM (público); sem ela, nenhum script de terceiros é injetado |
+| `GOOGLE_SHEET_ID` | Doppler, GitHub secret | planilha do snapshot de analytics |
+| `GOOGLE_SERVICE_ACCOUNT_JSON` | Doppler, GitHub secret | service account (JSON) com acesso de Editor à planilha |
 
 - Schema tipado em `astro.config.mjs` (`envField`); o servidor lê de `astro:env/server`.
 - Local: `.env` (gitignored) ou `doppler run --`.
@@ -110,14 +117,14 @@ Nunca commite valores. O repositório é público.
 
 1. Valida JSON, e-mail (regex + 254) e consentimento explícito.
 2. Rate limit por IP (5/10 min, Netlify Blobs) e Turnstile `siteverify`.
-3. Consulta o contato no Resend antes de gravar: se **não existe** (404), cria com `properties: { locale: 'pt', consent_at }` no segmento único e dispara a automação de boas-vindas; se **existe**, faz PATCH (reativa/atualiza consentimento e segmento) **sem** disparar. O `POST /contacts` do Resend é upsert (201 tanto para novo quanto para existente) — por isso a checagem prévia, que evita boas-vindas duplicadas.
+3. Consulta o contato no Resend antes de gravar: se **não existe** (404), cria com `properties: { locale: 'pt', consent_at }` no segmento único e dispara a automação de boas-vindas; se **existe**, faz PATCH (reativa/atualiza consentimento e segmento, limpa `unsubscribed_at`) **sem** disparar. O `POST /contacts` do Resend é upsert (201 tanto para novo quanto para existente) — por isso a checagem prévia, que evita boas-vindas duplicadas. Quando o navegador envia, grava também a origem sem cookie: `signup_referrer` (document.referrer) e `signup_utm` (utm_source/medium/campaign).
 
 O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Assinar; o botão fica cinza até um e-mail válido ser digitado (aí vira laranja) e, no clique, mostra helptext laranja se faltar e-mail válido ou consentimento.
 
 ### Descadastro (`POST /api/unsubscribe`)
 
 - Página `/descadastrar` (link "cancelar inscrição" do e-mail): lista o que a pessoa deixa de receber e pede confirmação do e-mail.
-- A API valida e-mail, aplica rate limit + Turnstile (helpers em `src/lib/api.ts`) e marca o contato como `unsubscribed: true` no Resend. Contato inexistente responde `ok` mesmo assim (anti-enumeração).
+- A API valida e-mail, aplica rate limit + Turnstile (helpers em `src/lib/api.ts`), marca o contato como `unsubscribed: true` e grava `unsubscribed_at` (data do descadastro, usada nos totais do snapshot). Contato inexistente responde `ok` mesmo assim (anti-enumeração).
 - O link visível do e-mail aponta para essa página (não usamos `{{{RESEND_UNSUBSCRIBE_URL}}}`); como o volume é baixo, abrimos mão do header `List-Unsubscribe` gerenciado pelo Resend. Se quiser o fluxo automático de volta, troque o link por `{{{RESEND_UNSUBSCRIBE_URL}}}`.
 
 ### Newsletter
@@ -133,10 +140,21 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 - Workflow **Newsletter** (Actions → Run workflow, input `slug`) roda o script. O slug é validado (`^[a-z0-9-]+$`) e passado por env (nunca interpolado direto em `run:`).
 - Remetente: `introducing.news <oi@introducing.news>`. Unsubscribe gerenciado pelo Resend.
 
+### Analytics
+
+- **GTM + Clarity**: `PUBLIC_GTM_ID` (definida só na Netlify de produção) injeta o Google Tag Manager no `<head>` e o fallback `<noscript>` no `<body>`; o Clarity é carregado por uma tag dentro do GTM — não há snippet dele no código. Sem a env (dev e staging), nenhum script de terceiros é injetado, para não poluir os dados.
+- **Tracking no Resend**: open + click tracking ligados no domínio `introducing.news`, com subdomínio `links.introducing.news` (CNAME **DNS only** → `links2.resend-dns.com`). O click tracking reescreve os links do e-mail para passar por esse subdomínio; aberturas vêm de um pixel 1×1 e são infladas por Apple Mail/Mail Privacy Protection — prefira a taxa de clique.
+- **Properties de atribuição/churn**: `signup_referrer`, `signup_utm` e `unsubscribed_at` — criadas via API no Resend (propriedade só grava se a chave existir). O CTA do e-mail leva `utm_source=newsletter&utm_medium=email&utm_campaign=edicao-<slug>` (montado no `send-newsletter.mjs`), então a origem "newsletter" aparece no snapshot.
+- **Snapshot semanal**: o workflow **Analytics** (`.github/workflows/analytics.yml`, segundas 08:30 BRT + dispatch manual) roda `scripts/analytics-snapshot.mjs`, que lê o segmento de produção (`RESEND_SEGMENT_ID`) e reconstrói o histórico via API (`/segments/:id/contacts`, `/emails/metrics` por broadcast, `/clicked-links`), reescrevendo quatro abas no Google Sheet: `crescimento` (novos/churn por dia), `resumo` (total/ativos/descadastrados), `edicoes` (enviados, entregues, abertos, cliques, bounces e taxas) e `links` (ranking de cliques por link/edição). Semanas sem novidade reescrevem os mesmos dados (idempotente).
+- **Privacidade**: o Sheet recebe **só agregados** — nenhum e-mail de assinante. A retenção de dados de e-mail no Resend é de 30 dias (consultas por `broadcast_id` escapam); o snapshot semanal preserva o histórico. Descadastros feitos direto na página entram nos totais, mas não na série de churn por dia (que vem dos descadastros ligados a broadcast).
+- **Looker Studio (setup manual, uma vez)**: criar a planilha; criar a service account no Google Cloud e baixar o JSON; **compartilhar a planilha com o e-mail da service account como Editor**; guardar `GOOGLE_SHEET_ID` e `GOOGLE_SERVICE_ACCOUNT_JSON` (Doppler + GitHub secrets); conectar o Sheet ao Looker (conector nativo) e montar as páginas (visão geral, edições, links). O heatmap fica no painel do Clarity — a API dele (10 req/dia, 3 dias) não serve como fonte do Looker.
+- Local: `doppler run -p introducing-news -c dev_personal -- npm run analytics:sync`; para testar sem Google, `node scripts/analytics-snapshot.mjs --dry-run` (CSVs no temporário).
+
 ### Deploy
 
 - Push na `main` → **Netlify Git integration**: build (`npm run build`) + deploy automáticos. Projeto `introducing-news` (site id `01f3f0c5-38b4-42da-8f75-bdf5fdbd5bb8`).
 - Workflow **Publicar batch**: acionado por commits em `src/content/posts/**` e por cron (toda segunda, 07:45 BRT); só age quando há edição programada, vencida e completa (ver "Conteúdo"). O push na `main` dispara o build da Netlify.
+- Workflow **Analytics**: cron semanal (segundas, 08:30 BRT) + dispatch manual; sem `GOOGLE_SHEET_ID`/`GOOGLE_SERVICE_ACCOUNT_JSON` configurados, encerra com aviso sem falhar.
 - O site é servido por uma **SSR Function** (rotas de API e Keystatic) e uma **Middleware Edge Function** (redirects de `/pt` e `/en`).
 - **DNS (Cloudflare, cinza/DNS-only — fora do repo)**: apex `introducing.news` → A `75.2.60.5` (load balancer da Netlify; **sem AAAA** — o LB não tem IPv6); `www` e `cms` → CNAME `introducing-news.netlify.app`; `staging` → CNAME `introducing-news-staging.netlify.app`. O domínio é registrado na Cloudflare Registrar (a zona **não** pode ser apagada nem usar nameservers externos). A Cloudflare guarda **apenas o DNS e o Turnstile** deste projeto — os Workers e as regras de zona foram removidos.
 - **Canônico / `www`**: o host canônico é o apex `https://introducing.news`; `www` → **301** para o apex (regra `[[redirects]]` no `netlify.toml`, preserva path e query).
@@ -158,6 +176,10 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 10. **Batch → Deploy**: o push na `main` dispara o build da Netlify automaticamente (Git integration); não é mais preciso acionar workflow.
 11. **Domínio na Netlify**: adicionar/alterar custom domain **só pela UI** — a API pública (`updateSite`) ignora `custom_domain`/`domain_aliases`. O apex usa A `75.2.60.5` e o LB **não tem IPv6**: não pode haver AAAA no apex, senão o certificado falha.
 12. **Rate limit**: usa **Netlify Blobs** (`@netlify/blobs`, consistência forte). Em dev local funciona pelo emulador do adapter; sem contexto da Netlify, o limitador falha em silêncio (nunca bloqueia).
+13. **Tracking do Resend**: o subdomínio `links.introducing.news` **não pode ser removido** (só trocado) e o click tracking reescreve os links de todos os e-mails do domínio, inclusive boas-vindas. O CNAME precisa ser **DNS only** no Cloudflare (sem nuvem laranja).
+14. **Retenção do Resend**: 30 dias para dados de e-mail no plano padrão; o snapshot semanal é o que preserva o histórico do dashboard.
+15. **Staging fora das métricas**: o GTM só é injetado com `PUBLIC_GTM_ID` (definida apenas na produção) e o snapshot filtra pelo segmento "Assinantes" (`RESEND_SEGMENT_ID`) — não remova esses filtros, ou os testes entram nos números.
+16. **CSP + tags**: tags novas no GTM podem exigir domínios novos na CSP de `public/_headers` (ex.: Facebook/Meta, Hotjar); confira o console por erros de CSP depois de mudar o contêiner.
 
 ## Decisões de escopo
 
@@ -171,6 +193,7 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 - Antes de commitar: `git diff --cached | grep -E "re_[A-Za-z0-9]{20,}|0x4AAAAA|ghp_|dp\.pt\."` (deve ser vazio).
 - `.env*`, `dist/`, `.netlify/` são gitignored — mantenha assim.
 - Formulário: e-mail validado, consentimento obrigatório, Turnstile e rate limit por IP; a API **não** expõe nenhum endpoint de leitura de contatos.
+- O snapshot de analytics grava **apenas métricas agregadas** no Google Sheet; nunca exporte e-mails de assinantes para planilhas, logs, issues ou mensagens.
 - `public/_headers` aplica CSP, HSTS, `nosniff`, `Referrer-Policy` e `frame-ancestors 'none'`. Ao adicionar scripts/iframes/fontes externas, atualize a CSP junto.
 - A `RESEND_API_KEY` é full-access (precisa escrever contatos). Mantenha-a somente em segredos; se vazar, rotacione imediatamente.
 - Keystatic em produção exige login GitHub com acesso de escrita ao repositório (GitHub App com `Contents: Read and write`).
@@ -186,5 +209,6 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 
 - Pendências e melhorias: [issues do repositório](https://github.com/daviccarneiro/introducing.news/issues).
 - Figma: arquivo "introducing.news — Design" (Fundações/Componentes/Telas; tokens espelhados no CSS).
-- Painéis: Resend (Domains/Contacts/Segments), Netlify (projeto `introducing-news`), Cloudflare (DNS da zona + Turnstile), Doppler (projeto `introducing-news`).
+- Marca e estilo para pessoas e agentes de IA: `DESIGN.md` (voz, cores, tipografia, imagens, prompts). Assets prontos: `public/brand/` (logo, ícone, capas), tokens legíveis por máquina em `design/tokens.json` e fontes OFL em `design/fonts/`.
+- Painéis: Resend (Domains/Contacts/Segments/Broadcasts), Netlify (projeto `introducing-news`), Cloudflare (DNS da zona + Turnstile), Doppler (projeto `introducing-news`), Google Tag Manager (contêiner `GTM-TFKQKWHD`), Microsoft Clarity (heatmap do site) e Looker Studio (relatório do Sheet de analytics).
 - Rotas de API: `POST /api/subscribe` (inscrição), `/api/keystatic/*` (CMS), `/keystatic` (admin).
