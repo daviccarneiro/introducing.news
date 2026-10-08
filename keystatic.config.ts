@@ -7,6 +7,11 @@ const useGitHub = Boolean(import.meta.env.PUBLIC_KEYSTATIC_GITHUB_APP_SLUG);
 
 const postSchema = {
   title: fields.slug({ name: { label: 'Título' } }),
+  number: fields.integer({
+    label: 'Número da edição',
+    description: 'Usado no assunto do e-mail (#N) e exibido na página.',
+    validation: { isRequired: true, min: 1 },
+  }),
   description: fields.text({
     label: 'Resumo',
     multiline: true,

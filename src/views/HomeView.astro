@@ -2,7 +2,8 @@
 import Base from '../layouts/Base.astro';
 import Cover from '../components/Cover.astro';
 import SubscribeForm from '../components/SubscribeForm.astro';
-import { t } from '../copy';
+import Typewriter from 'astro-typewriter';
+import { TYPEWRITER_WORDS, t } from '../copy';
 import { formatDate, getAuthor, getPosts, initialsOf, readingTime } from '../lib/posts';
 
 const posts = await getPosts();
@@ -21,12 +22,58 @@ const faqs = [
 <Base>
   <section class="hero container" id="assinar">
     <h1>
-      {t('home.title.line1')}<br />
+      <span class="hero__line">
+        {t('home.title.before')}{' '}
+        <span class="hero__word">
+          <Typewriter
+            messages={TYPEWRITER_WORDS.map((word) => `${word},`)}
+            writeSpeed={100}
+            deleteSpeed={40}
+            waitWritten={2000}
+            waitDeleted={400}
+            class="hero__type"
+          />
+        </span>
+      </span>
+      <br class="hero__break" />
       <span class="mark">
         <img class="mark__bg" src="/images/highlight.svg" width="363" height="56" alt="" aria-hidden="true" />
         <span class="mark__text">{t('home.title.line2')}</span>
-      </span>
+      </span>.
     </h1>
+    <script is:inline>
+      // Habilita os ajustes de layout do herói que dependem do componente.
+      document.documentElement.classList.add('js');
+
+      const typewriter = document.querySelector('.hero__type');
+
+      // O componente junta as mensagens com ", " no texto para leitores de tela;
+      // como cada mensagem agora termina em vírgula, removemos a duplicação.
+      const fixScreenreader = () => {
+        const screenreader = typewriter?.shadowRoot?.querySelector('.screenreader-or-print');
+        if (!screenreader) return;
+        const words = JSON.parse(typewriter.dataset.messages ?? '[]').map((message) =>
+          String(message).replace(/,$/, ''),
+        );
+        screenreader.textContent = words.join(', ');
+      };
+
+      customElements.whenDefined('astro-typewriter').then(fixScreenreader);
+
+      // O astro-typewriter não tem prop de atraso: tiramos do DOM e reinserimos
+      // após 1s para a primeira palavra começar a ser digitada mais tarde.
+      // Sem JS, o conteúdo do componente continua visível (noscript).
+      (() => {
+        if (!typewriter || !typewriter.parentNode) return;
+        const parent = typewriter.parentNode;
+        const next = typewriter.nextSibling;
+        typewriter.remove();
+        window.setTimeout(() => {
+          parent.insertBefore(typewriter, next);
+          fixScreenreader();
+        }, 1000);
+      })();
+    </script>
     <p class="hero__sub">{t('home.sub')}</p>
     <SubscribeForm id="assinar-form" />
     <p class="meta">{t('home.micro')}</p>
@@ -142,6 +189,48 @@ const faqs = [
     max-width: 900px;
   }
 
+  /* A linha do typewriter nunca quebra: o tamanho é limitado para que
+     "O que importa em eventos de tecnologia," (a maior combinação) caiba.
+     Só com JS — sem JS o componente mostra todas as palavras e deve poder quebrar. */
+  :global(.js) .hero__line {
+    white-space: nowrap;
+  }
+
+  :global(.js) .hero__type {
+    white-space: nowrap;
+  }
+
+  :global(.js) .hero__word {
+    white-space: nowrap;
+  }
+
+  @media (min-width: 641px) {
+    :global(.js) .hero h1 {
+      font-size: min(clamp(40px, 5.5vw, 64px), 50px, calc((100vw - 96px) / 18));
+    }
+  }
+
+  @media (max-width: 640px) {
+    :global(.js) .hero__line {
+      white-space: normal;
+    }
+
+    /* No celular a palavra (com a vírgula) tem uma linha dedicada, sempre
+       inteira: nunca quebra nem pula de linha durante a digitação. O bloco já
+       força a quebra, então o <br> vira uma linha em branco — some com ele. */
+    :global(.js) .hero__word {
+      display: block;
+    }
+
+    :global(.js) .hero__break {
+      display: none;
+    }
+
+    :global(.js) .hero h1 {
+      font-size: min(clamp(40px, 5.5vw, 64px), calc((100vw - 48px) / 9.8));
+    }
+  }
+
   .mark {
     position: relative;
     display: inline-block;
@@ -151,7 +240,8 @@ const faqs = [
     position: absolute;
     left: -2px;
     top: 50%;
-    width: calc(100% + 8px);
+    /* Termina antes do ponto final (não avança sob ele). */
+    width: calc(100% + 1px);
     max-width: none;
     height: 0.875em;
     transform: translateY(-50%) rotate(1.2deg);

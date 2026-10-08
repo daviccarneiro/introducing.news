@@ -171,6 +171,14 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
     color: var(--accent-soft-foreground);
   }
 
+  /* Inscrição concluída: some com o formulário e a verificação anti-bot,
+     deixando só a mensagem de sucesso. */
+  .subscribe[data-state='success'] .subscribe__row,
+  .subscribe[data-state='success'] .consent,
+  .subscribe[data-state='success'] .cf-turnstile {
+    display: none;
+  }
+
   .subscribe__status[data-state='error'] {
     color: var(--accent-700);
   }
@@ -264,6 +272,7 @@ const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
         if (response.ok) {
           form.reset();
           syncButtonState();
+          form.dataset.state = 'success';
           status.textContent = messages.success;
           status.dataset.state = 'ok';
         } else {

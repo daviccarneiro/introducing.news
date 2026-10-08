@@ -25,7 +25,6 @@ export const TEMPLATE_SUBJECT = 'Nova edição da introducing.news';
 const COPY = {
   lang: 'pt-BR',
   tagline: 'Novidades de tecnologia, curadas por professores e profissionais.',
-  kicker: 'Nova edição',
   cta: 'Ler a edição completa',
   signOff: 'Um abraço,',
   foot: 'Você recebe este e-mail porque assinou a introducing.news.',
@@ -56,7 +55,7 @@ export const templateHtml = `<!doctype html>
 <td valign="middle" style="font-family:'Inter',${SANS};font-size:18px;font-weight:600;line-height:1.2;letter-spacing:-0.01em;color:#0B0B0C;">introducing<span style="color:#6B6B76;">.news</span></td>
 </tr></table>
 <p style="margin:8px 0 28px 0;font-family:${SANS};font-size:13px;line-height:1.5;color:#9A9AA4;">{{{TAGLINE}}}</p>
-<p style="margin:0 0 12px 0;font-family:${MONO};font-size:11px;font-weight:500;line-height:1.4;letter-spacing:0.08em;text-transform:uppercase;color:#A63E0A;">{{{KICKER}}}</p>
+<p style="margin:0 0 12px 0;font-family:${MONO};font-size:11px;font-weight:500;line-height:1.4;letter-spacing:0.08em;text-transform:uppercase;color:#A63E0A;">{{{DATE}}}</p>
 <h1 style="margin:0 0 16px 0;font-family:${SERIF};font-size:27px;font-weight:600;line-height:1.22;letter-spacing:-0.015em;color:#0B0B0C;">{{{TITLE}}}</h1>
 <p style="margin:0 0 28px 0;font-family:${SERIF};font-size:18px;line-height:1.65;color:#6B6B76;">{{{DESCRIPTION}}}</p>
 {{{BODY}}}
@@ -80,12 +79,12 @@ export const templateHtml = `<!doctype html>
 </tr>
 <tr>
 <td style="padding:24px 40px 0 40px;font-family:${SANS};">
+<p style="margin:0 0 10px 0;font-family:${SANS};font-size:13px;line-height:1.5;color:#6B6B76;">{{{SIGN_OFF}}}</p>
 <table role="presentation" cellpadding="0" cellspacing="0" border="0">
 <tr>
 <td width="40" valign="top" style="width:40px;">{{{SIGNATURE_AVATAR}}}</td>
 <td valign="middle" style="padding-left:12px;font-family:${SANS};">
-<p style="margin:0;font-family:${SANS};font-size:13px;line-height:1.5;color:#6B6B76;">{{{SIGN_OFF}}}</p>
-<p style="margin:2px 0 0 0;font-family:${SANS};font-size:15px;font-weight:600;line-height:1.4;color:#0B0B0C;">{{{SIGNATURE_NAME}}}</p>
+<p style="margin:0;font-family:${SANS};font-size:15px;font-weight:600;line-height:1.4;color:#0B0B0C;">{{{SIGNATURE_NAME}}}</p>
 {{{SIGNATURE_ROLE_LINE}}}
 </td>
 </tr>
@@ -157,16 +156,16 @@ export function renderText(values) {
     `${values.SIGN_OFF} ${values.SIGNATURE_NAME}${values.SIGNATURE_ROLE_TEXT ? ` — ${values.SIGNATURE_ROLE_TEXT}` : ''}`,
     '',
     values.FOOT_MESSAGE,
-    `introducing.news · ${values.UNSUBSCRIBE_LABEL}: {{{RESEND_UNSUBSCRIBE_URL}}}`,
+    `introducing.news · ${values.UNSUBSCRIBE_LABEL}: ${values.UNSUBSCRIBE_URL}`,
   ].join('\n');
 }
 
 /** Monta HTML e texto do e-mail de uma edição. */
-export function buildEmail({ title, description, url, site, author, body = { html: '', text: '' } }) {
+export function buildEmail({ title, description, url, site, author, body = { html: '', text: '' }, date = '' }) {
   const variables = {
     LANG: COPY.lang,
     TAGLINE: COPY.tagline,
-    KICKER: COPY.kicker,
+    DATE: date,
     TITLE: title,
     DESCRIPTION: description,
     BODY: body.html,
@@ -182,7 +181,7 @@ export function buildEmail({ title, description, url, site, author, body = { htm
     SIGNATURE_ROLE_TEXT: author.role ?? '',
     FOOT_MESSAGE: COPY.foot,
     UNSUBSCRIBE_LABEL: COPY.unsubscribe,
-    UNSUBSCRIBE_URL: '{{{RESEND_UNSUBSCRIBE_URL}}}',
+    UNSUBSCRIBE_URL: `${site}/descadastrar`,
     SITE_URL: site,
   };
   return { html: renderEmail(variables), text: renderText(variables) };
@@ -191,7 +190,7 @@ export function buildEmail({ title, description, url, site, author, body = { htm
 const fallbackVariables = {
   LANG: COPY.lang,
   TAGLINE: COPY.tagline,
-  KICKER: COPY.kicker,
+  DATE: '5 de outubro de 2026',
   TITLE: 'Título da edição',
   DESCRIPTION: 'Resumo curto da edição, direto no e-mail.',
   BODY: [
@@ -211,7 +210,7 @@ const fallbackVariables = {
     '<p style="margin:2px 0 0 0;font-family:' + SANS + ';font-size:13px;line-height:1.5;color:#9A9AA4;">Cargo ou linha de assinatura</p>',
   FOOT_MESSAGE: COPY.foot,
   UNSUBSCRIBE_LABEL: COPY.unsubscribe,
-  UNSUBSCRIBE_URL: 'https://introducing.news',
+  UNSUBSCRIBE_URL: 'https://introducing.news/descadastrar',
   SITE_URL: 'https://introducing.news',
 };
 

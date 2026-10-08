@@ -34,10 +34,13 @@ src/
     index.astro            # home (formulário de inscrição no hero)
     arquivo/index.astro    # todas as edições
     arquivo/[...slug].astro# página da edição
+    descadastrar.astro     # confirmação de descadastro (link do e-mail)
     rss.xml.ts             # feed RSS
     api/subscribe.ts       # inscrição (valida, rate-limit, Turnstile, Resend)
+    api/unsubscribe.ts     # descadastro (mesmas defesas; PATCH unsubscribed no Resend)
   components/              # SiteHeader, SiteFooter, PostCard, Cover, Badge, SubscribeForm
   lib/posts.ts             # consultas, autor da assinatura, readingTime, formatDate
+  lib/api.ts               # json/clientIp/rate-limit/Turnstile compartilhados pelas APIs
   middleware.ts            # 301 de URLs antigas (/pt/*, /en/* → rotas atuais)
 keystatic.config.ts        # CMS (coleções "Edições", "Autores" e "E-mails")
 scripts/email-template.mjs # fonte de verdade do layout do e-mail
@@ -91,7 +94,7 @@ Nunca commite valores. O repositório é público.
 ### Conteúdo
 
 - `src/content/posts/*.mdx`; schema em `src/content.config.ts`; no CMS, coleção `posts` ("Edições").
-- Campos: `title`, `description`, `category`, `publishedAt`, `cover` (fig-01..03), `coverImage` (upload opcional → `public/images/covers/`), `signature` (relação com Autores), `status`.
+- Campos: `title`, `number` (número da edição), `description`, `publishedAt`, `cover` (fig-01..03), `coverImage` (upload opcional → `public/images/covers/`), `signature` (relação com Autores), `status`.
 - `src/content/authors/*.json`: nome, cargo/linha de assinatura e foto (upload → `public/images/authors/`). No CMS, coleção "Autores".
 - `src/content/emails/*.mdx`: e-mail da newsletter (versão reduzida), ligado a uma edição pelo campo `edition`; conteúdo em MDX (negrito, listas, links, imagens → upload em `public/images/emails/`). No CMS, coleção "E-mails".
 - `signature` define **quem assina o e-mail** que anuncia a edição — pode ser diferente de quem escreveu o conteúdo. O e-mail usa nome + cargo + foto (ou iniciais) do autor. Obrigatório no CMS; o envio recusa edição sem assinatura.
@@ -109,6 +112,12 @@ Nunca commite valores. O repositório é público.
 
 O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Assinar; o botão fica cinza até um e-mail válido ser digitado (aí vira laranja) e, no clique, mostra helptext laranja se faltar e-mail válido ou consentimento.
 
+### Descadastro (`POST /api/unsubscribe`)
+
+- Página `/descadastrar` (link "cancelar inscrição" do e-mail): lista o que a pessoa deixa de receber e pede confirmação do e-mail.
+- A API valida e-mail, aplica rate limit + Turnstile (helpers em `src/lib/api.ts`) e marca o contato como `unsubscribed: true` no Resend. Contato inexistente responde `ok` mesmo assim (anti-enumeração).
+- O link visível do e-mail aponta para essa página (não usamos `{{{RESEND_UNSUBSCRIBE_URL}}}`); como o volume é baixo, abrimos mão do header `List-Unsubscribe` gerenciado pelo Resend. Se quiser o fluxo automático de volta, troque o link por `{{{RESEND_UNSUBSCRIBE_URL}}}`.
+
 ### Newsletter
 
 - `scripts/email-template.mjs` é a fonte de verdade do layout do e-mail: HTML em tabelas, CSS inline, fontes de sistema e tokens de `tokens.css`, com fallback VML no botão (Gmail, Apple Mail, Outlook). `buildEmail()` monta o e-mail (cabeçalho + resumo + corpo + CTA + assinatura). É uma versão reduzida da página, com formatação própria — o HTML do site não é reutilizado.
@@ -116,6 +125,8 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 - `npm run template:sync` espelha esse HTML como template publicado no Resend (preview/teste no painel). O envio **não** depende do painel: usa o HTML do repositório.
 - Para ver o e-mail real antes de enviar: `node scripts/send-newsletter.mjs <slug> --preview` grava o HTML no diretório temporário (sem enviar); o painel do Resend mostra o layout com os valores de fallback das variáveis.
 - `scripts/send-newsletter.mjs <slug> [--dry-run]`: monta o e-mail a partir do frontmatter (assinatura via `signature`) e cria um Broadcast com `send: true`. Só edições com `status: published` podem ser enviadas. Anti-duplicidade pelo nome `edição-<slug>`.
+- Assunto e kicker trazem a **data da edição** (`publishedAt`, ex.: "5 de outubro de 2026"); o assunto é `#N - assunto` (número da edição + assunto da coleção E-mails, com fallback no título).
+- O rodapé aponta "cancelar inscrição" para `/descadastrar` (ver "Descadastro").
 - Workflow **Newsletter** (Actions → Run workflow, input `slug`) roda o script. O slug é validado (`^[a-z0-9-]+$`) e passado por env (nunca interpolado direto em `run:`).
 - Remetente: `introducing.news <oi@introducing.news>`. Unsubscribe gerenciado pelo Resend.
 
@@ -138,7 +149,8 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 6. **Verificação de domínio** pode precisar de novo ciclo ("Restart verification") por cache de resolvedor. O CNAME `rsend` precisa estar **DNS only** no Cloudflare.
 7. **Actions**: nunca interpole `${{ inputs.* }}` diretamente em `run:` (injeção de shell) — passe por `env`.
 8. **Doppler**: o perfil global desta máquina aponta para outro projeto; sempre use `-p introducing-news -c dev_personal` (ou o `doppler.yaml` do repo).
-9. **Batch → Deploy**: push feito com `GITHUB_TOKEN` dentro do Actions não dispara outros workflows. O `publish.yml` aciona o Deploy explicitamente (`gh workflow run deploy.yml`), o que exige a permissão `actions: write`.
+9. **`astro-typewriter`**: o pacote declara peer `astro ^5 || ^6`; usamos `overrides` no `package.json` para o Astro 7. Não remova o override sem rodar `npm ci` — sem ele o CI quebra no ERESOLVE.
+10. **Batch → Deploy**: push feito com `GITHUB_TOKEN` dentro do Actions não dispara outros workflows. O `publish.yml` aciona o Deploy explicitamente (`gh workflow run deploy.yml`), o que exige a permissão `actions: write`.
 
 ## Decisões de escopo
 

@@ -27,6 +27,13 @@ const author = await getAuthor(post);
       <div class="post-head__inner">
         <a class="post-head__back" href="/arquivo/">{t('post.back')}</a>
         <div class="post-head__title">
+          {
+            typeof post.data.number === 'number' && (
+              <p class="post-head__edition">
+                {t('post.editionLabel')} #{post.data.number}
+              </p>
+            )
+          }
           <h1>{post.data.title}</h1>
         </div>
         <p class="post-head__lead">{post.data.description}</p>
@@ -134,6 +141,14 @@ const author = await getAuthor(post);
   .post-head h1 {
     font: 600 clamp(32px, 4.5vw, 44px) / 1.12 var(--font-serif);
     letter-spacing: -0.015em;
+  }
+
+  .post-head__edition {
+    font: 500 11px/1.4 var(--font-mono);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+    margin-bottom: var(--space-3);
   }
 
   .post-head__lead {

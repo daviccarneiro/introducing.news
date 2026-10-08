@@ -6,6 +6,8 @@ const posts = defineCollection({
   loader: glob({ base: './src/content/posts', pattern: '**/*.mdx' }),
   schema: z.object({
     title: z.string(),
+    /** Número da edição (aparece no assunto do e-mail e na página). */
+    number: z.number().int().optional(),
     description: z.string(),
     publishedAt: z.coerce.date(),
     cover: z.enum(['fig-01', 'fig-02', 'fig-03']).default('fig-01'),

@@ -125,15 +125,20 @@ if (!data.title || !data.description) {
 
 const author = await loadAuthor(data.signature);
 const url = `${SITE}/arquivo/${slug}/`;
+const dateLabel = new Intl.DateTimeFormat('pt-BR', {
+  day: 'numeric',
+  month: 'long',
+  year: 'numeric',
+}).format(new Date(data.publishedAt));
 
 const email = await findEmailFor(slug);
 let body = { html: '', text: '' };
-let subject = data.title;
+let subjectBase = data.title;
 let preview = data.description;
 
 if (email) {
   body = renderEmailBody(email.content, SITE);
-  subject = email.data.subject || data.title;
+  subjectBase = email.data.subject || data.title;
   preview = email.data.previewText || data.description;
   if (!body.html) {
     console.warn(`⚠ E-mail "${email.name}" está sem conteúdo — enviando só o resumo da edição.`);
@@ -142,7 +147,12 @@ if (email) {
   console.warn('⚠ Nenhum e-mail na coleção "E-mails" para esta edição — enviando a versão automática (título + resumo).');
 }
 
-const { html, text } = buildEmail({ title: data.title, description: data.description, url, site: SITE, author, body });
+const editionNumber = Number.isInteger(data.number) ? data.number : null;
+if (!editionNumber) {
+  console.warn('⚠ Frontmatter sem "number" — o assunto sairá sem o número da edição.');
+}
+const subject = editionNumber ? `#${editionNumber} - ${subjectBase}` : subjectBase;
+const { html, text } = buildEmail({ title: data.title, description: data.description, url, site: SITE, author, body, date: dateLabel });
 
 const missing = html.match(/\{\{\{(?!RESEND_UNSUBSCRIBE_URL\})[A-Z0-9_]+\}\}\}/g);
 if (missing) {

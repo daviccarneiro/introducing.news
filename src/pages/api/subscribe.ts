@@ -2,54 +2,9 @@ export const prerender = false;
 
 import type { APIRoute } from 'astro';
 import { env } from 'cloudflare:workers';
+import { clientIp, isRateLimited, json, verifyTurnstile } from '../../lib/api';
 
-const json = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
-  new Response(JSON.stringify(body), {
-    status,
-    headers: { 'Content-Type': 'application/json', ...headers },
-  });
-
-/**
- * Rate limit simples por IP usando a Cache API (por colo, aproximado).
- * Nunca bloqueia por falha do limitador — é uma camada extra além do Turnstile.
- */
-const RATE_LIMIT = { max: 5, windowSeconds: 600 };
-
-const isRateLimited = async (request: Request, ip: string | null): Promise<boolean> => {
-  if (!ip) return false;
-  try {
-    const cache = (caches as unknown as { default: Cache }).default;
-    const key = new Request(
-      new URL(`/.internal/rate-limit/subscribe/${encodeURIComponent(ip)}`, request.url).toString(),
-      { method: 'GET' },
-    );
-    const cached = await cache.match(key);
-    const count = cached ? Number(await cached.text()) || 0 : 0;
-    if (count >= RATE_LIMIT.max) return true;
-    await cache.put(
-      key,
-      new Response(String(count + 1), {
-        headers: { 'Cache-Control': `max-age=${RATE_LIMIT.windowSeconds}` },
-      }),
-    );
-    return false;
-  } catch {
-    return false;
-  }
-};
-
-const verifyTurnstile = async (secret: string, token: string, ip: string | null) => {
-  const body = new FormData();
-  body.append('secret', secret);
-  body.append('response', token);
-  if (ip) body.append('remoteip', ip);
-  const response = await fetch('https://challenges.cloudflare.com/turnstile/v0/siteverify', {
-    method: 'POST',
-    body,
-  });
-  const result = (await response.json()) as { success?: boolean };
-  return result.success === true;
-};
+const RATE_LIMIT = { scope: 'subscribe', max: 5, windowSeconds: 600 };
 
 export const POST: APIRoute = async ({ request }) => {
   let email = '';
@@ -77,8 +32,8 @@ export const POST: APIRoute = async ({ request }) => {
     return json({ error: 'É preciso aceitar receber os e-mails para continuar.' }, 400);
   }
 
-  const ip = request.headers.get('cf-connecting-ip');
-  if (await isRateLimited(request, ip)) {
+  const ip = clientIp(request);
+  if (await isRateLimited(request, ip, RATE_LIMIT.scope, RATE_LIMIT.max, RATE_LIMIT.windowSeconds)) {
     return json(
       { error: 'Muitas tentativas. Tente de novo em alguns minutos.' },
       429,
@@ -87,13 +42,8 @@ export const POST: APIRoute = async ({ request }) => {
   }
 
   // CAPTCHA (quando configurado). Bloqueia bots sem exigir duplo opt-in.
-  if (env.TURNSTILE_SECRET_KEY) {
-    const valid = turnstileToken
-      ? await verifyTurnstile(env.TURNSTILE_SECRET_KEY, turnstileToken, ip)
-      : false;
-    if (!valid) {
-      return json({ error: 'Falha na verificação anti-bot. Recarregue e tente de novo.' }, 400);
-    }
+  if (!(await verifyTurnstile(turnstileToken, ip))) {
+    return json({ error: 'Falha na verificação anti-bot. Recarregue e tente de novo.' }, 400);
   }
 
   const apiKey = env.RESEND_API_KEY;

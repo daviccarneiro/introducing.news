@@ -30,8 +30,10 @@ src/
     index.astro            # home (com o formulário de inscrição)
     arquivo/index.astro    # arquivo de todas as edições
     arquivo/[...slug].astro# página da edição
+    descadastrar.astro     # confirmação de descadastro (link do e-mail)
     rss.xml.ts             # feed RSS
     api/subscribe.ts       # inscrição (Resend)
+    api/unsubscribe.ts     # descadastro (Resend)
 keystatic.config.ts        # CMS (coleções "Edições", "Autores" e "E-mails")
 scripts/email-template.mjs # template do e-mail (fonte de verdade)
 scripts/email-body.mjs     # converte o MDX do e-mail em HTML de e-mail
@@ -87,9 +89,9 @@ Uma edição "Programada" entra no próximo **batch**: escolha a data no campo "
    - Localmente: `doppler run -- node scripts/send-newsletter.mjs <slug>` (use `--dry-run` para simular e `--preview` para gerar o HTML real e abrir no navegador, sem enviar).
 3. O script é idempotente: não envia a mesma edição duas vezes (nome `edição-<slug>`).
 
-O e-mail é uma versão reduzida da página (título + resumo + corpo escrito na coleção **E-mails** + botão + assinatura) e leva para a edição completa no site. O **conteúdo** é editado no CMS; o **formato** vem de `scripts/email-template.mjs` e `scripts/email-body.mjs`. Para pré-visualizar no painel do Resend, rode `npm run template:sync` (o envio sempre usa o HTML do repositório).
+O e-mail é uma versão reduzida da página (título + resumo + corpo escrito na coleção **E-mails** + botão + assinatura), com a **data da edição** no corpo e o assunto no formato `#N - assunto` (N é o número da edição, definido no CMS), e leva para a edição completa no site. O **conteúdo** é editado no CMS; o **formato** vem de `scripts/email-template.mjs` e `scripts/email-body.mjs`. Para pré-visualizar no painel do Resend, rode `npm run template:sync` (o envio sempre usa o HTML do repositório).
 
-O Resend gerencia o link de descadastro automaticamente em cada Broadcast.
+O link "cancelar inscrição" leva para `/descadastrar`, onde a pessoa vê o que deixa de receber e confirma a saída — a remoção é feita pela API (`POST /api/unsubscribe`) no Resend.
 
 ## CMS em produção (Keystatic · modo GitHub) — opcional
 

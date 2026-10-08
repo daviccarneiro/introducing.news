@@ -1,0 +1,256 @@
+---
+import Base from '../layouts/Base.astro';
+import { t } from '../copy';
+
+const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
+const prefilled = (Astro.url.searchParams.get('email') ?? '').trim();
+const bullets = [
+  t('unsubscribe.bullet.1'),
+  t('unsubscribe.bullet.2'),
+  t('unsubscribe.bullet.3'),
+  t('unsubscribe.bullet.4'),
+];
+---
+
+<Base title={`${t('unsubscribe.title')} — introducing.news`} description={t('unsubscribe.intro')}>
+  <section class="bye container">
+    <div class="bye__card">
+      <h1>{t('unsubscribe.title')}</h1>
+      <p class="bye__intro">{t('unsubscribe.intro')}</p>
+      <ul class="bye__list">
+        {bullets.map((item) => <li>{item}</li>)}
+      </ul>
+      <p class="bye__note meta">{t('unsubscribe.note')}</p>
+
+      <form
+        class="bye__form"
+        data-unsubscribe
+        novalidate
+        data-msg-sending={t('unsubscribe.sending')}
+        data-msg-error={t('unsubscribe.error')}
+        data-msg-invalid={t('unsubscribe.invalid')}
+        data-msg-network={t('unsubscribe.network')}
+      >
+        <label class="bye__label" for="bye-email">{t('unsubscribe.emailLabel')}</label>
+        <input
+          class="bye__input"
+          id="bye-email"
+          name="email"
+          type="email"
+          value={prefilled}
+          autocomplete="email"
+          required
+        />
+        {
+          turnstileSiteKey && (
+            <div
+              class="cf-turnstile"
+              data-sitekey={turnstileSiteKey}
+              data-theme="light"
+              data-language="pt-BR"
+              data-size="flexible"
+            />
+          )
+        }
+        <div class="bye__actions">
+          <button class="bye__button" type="submit">{t('unsubscribe.button')}</button>
+          <a class="bye__back" href="/">{t('unsubscribe.back')}</a>
+        </div>
+        <p class="bye__status meta" role="status" aria-live="polite" hidden></p>
+      </form>
+
+      <div class="bye__done" hidden>
+        <p class="bye__done-title">{t('unsubscribe.success.title')}</p>
+        <p class="meta">{t('unsubscribe.success.body')}</p>
+        <a class="bye__back" href="/">{t('unsubscribe.back')}</a>
+      </div>
+    </div>
+  </section>
+</Base>
+
+<script>
+  const form = document.querySelector('form[data-unsubscribe]');
+  if (form instanceof HTMLFormElement) {
+    const status = form.querySelector('.bye__status');
+    const button = form.querySelector('button[type="submit"]');
+    const done = document.querySelector('.bye__done');
+    let sending = false;
+
+    const show = (message: string, isError: boolean) => {
+      if (!(status instanceof HTMLElement)) return;
+      status.textContent = message;
+      status.dataset.error = isError ? 'true' : 'false';
+      status.hidden = false;
+    };
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      if (sending) return;
+
+      const email = form.querySelector('input[name="email"]');
+      const token = form.querySelector('[name="cf-turnstile-response"]');
+      if (!(email instanceof HTMLInputElement) || !email.checkValidity()) {
+        show(form.dataset.msgInvalid ?? '', true);
+        return;
+      }
+
+      sending = true;
+      if (button instanceof HTMLButtonElement) button.disabled = true;
+      show(form.dataset.msgSending ?? '', false);
+
+      try {
+        const response = await fetch('/api/unsubscribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: email.value,
+            turnstileToken: token instanceof HTMLInputElement ? token.value : '',
+          }),
+        });
+        const result = (await response.json().catch(() => ({}))) as { error?: unknown };
+        if (!response.ok) throw new Error(typeof result.error === 'string' ? result.error : '');
+
+        form.hidden = true;
+        if (done instanceof HTMLElement) done.hidden = false;
+      } catch (error) {
+        show(error instanceof Error && error.message ? error.message : (form.dataset.msgNetwork ?? ''), true);
+        sending = false;
+        if (button instanceof HTMLButtonElement) button.disabled = false;
+        const turnstile = (window as unknown as { turnstile?: { reset: () => void } }).turnstile;
+        if (turnstile && token instanceof HTMLInputElement) turnstile.reset();
+      }
+    });
+  }
+</script>
+
+<style>
+  .bye {
+    padding-block: var(--space-20) var(--space-24);
+  }
+
+  .bye__card {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-5);
+    max-width: 640px;
+    margin-inline: auto;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-xl);
+    padding: var(--space-10);
+  }
+
+  .bye h1 {
+    font: 600 clamp(28px, 3.5vw, 36px) / 1.15 var(--font-serif);
+    letter-spacing: -0.01em;
+  }
+
+  .bye__intro {
+    font: 400 18px/1.6 var(--font-serif);
+    color: var(--muted-foreground);
+  }
+
+  .bye__list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    padding-left: var(--space-5);
+  }
+
+  .bye__list li {
+    font: 400 16px/1.6 var(--font-sans);
+    color: var(--foreground);
+  }
+
+  .bye__list li::marker {
+    color: var(--accent);
+  }
+
+  .bye__form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-4);
+    border-top: 1px solid var(--border);
+    padding-top: var(--space-6);
+    margin-top: var(--space-2);
+  }
+
+  .bye__label {
+    font: 500 14px/1.4 var(--font-sans);
+  }
+
+  .bye__input {
+    height: 48px;
+    padding-inline: var(--space-4);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-md);
+    background: var(--card);
+    color: var(--foreground);
+    font: 400 16px/1.4 var(--font-sans);
+  }
+
+  .bye__input:focus {
+    outline: 2px solid var(--ring);
+    outline-offset: 1px;
+  }
+
+  .bye__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-4);
+  }
+
+  .bye__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 48px;
+    padding-inline: var(--space-6);
+    border: 0;
+    border-radius: var(--radius-md);
+    background: var(--accent);
+    color: var(--accent-foreground);
+    font: 600 15px/1.2 var(--font-sans);
+    cursor: pointer;
+  }
+
+  .bye__button:hover {
+    background: var(--accent-600);
+  }
+
+  .bye__button:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+
+  .bye__back {
+    font: 500 14px/1.4 var(--font-sans);
+    color: var(--link);
+  }
+
+  .bye__status[data-error='true'] {
+    color: var(--accent-700);
+  }
+
+  .bye__status[data-error='false'] {
+    color: var(--muted-foreground);
+  }
+
+  .bye__done {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    border-top: 1px solid var(--border);
+    padding-top: var(--space-6);
+    margin-top: var(--space-2);
+  }
+
+  .bye__done[hidden] {
+    display: none;
+  }
+
+  .bye__done-title {
+    font: 600 20px/1.3 var(--font-sans);
+  }
+</style>
