@@ -4,6 +4,7 @@ import netlify from '@astrojs/netlify';
 import react from '@astrojs/react';
 import mdx from '@astrojs/mdx';
 import keystatic from '@keystatic/astro';
+import sentry from '@sentry/astro';
 
 export default defineConfig({
   site: 'https://introducing.news',
@@ -27,10 +28,32 @@ export default defineConfig({
       // Google Tag Manager (carrega Clarity e demais tags). Só em produção:
       // sem a variável nenhum script de terceiro é injetado (dev/staging).
       PUBLIC_GTM_ID: envField.string({ context: 'client', access: 'public', optional: true }),
+      // Sentry (erros no navegador e nas funções). O DSN é público por
+      // natureza; sem ele nada é enviado. O token só existe no build.
+      PUBLIC_SENTRY_DSN: envField.string({ context: 'client', access: 'public', optional: true }),
+      PUBLIC_SENTRY_ENVIRONMENT: envField.string({ context: 'client', access: 'public', optional: true }),
+      SENTRY_AUTH_TOKEN: envField.string({ context: 'server', access: 'secret', optional: true }),
     },
   },
   // `middlewareMode: 'edge'` faz o middleware (redirects de /pt e /en) rodar em
   // todas as requisições, inclusive nas páginas pré-renderizadas.
   adapter: netlify({ middlewareMode: 'edge' }),
-  integrations: [react(), mdx(), keystatic()],
+  integrations: [
+    react(),
+    mdx(),
+    keystatic(),
+    sentry({
+      // Source maps: o token vem do ambiente e sem ele o upload é pulado.
+      org: 'davi-carneiro',
+      project: 'introducing-news',
+      authToken: process.env.SENTRY_AUTH_TOKEN,
+      telemetry: false,
+      // Os maps são gerados como `hidden`, sobem com debug IDs e não devem
+      // ficar publicados em `dist/`.
+      sourcemaps: { filesToDeleteAfterUpload: ['./dist/**/*.map'] },
+      // O middleware do Sentry depende do `@sentry/node`, que não roda na
+      // Edge Function do Netlify (middlewareMode: 'edge' — ver AGENTS.md).
+      autoInstrumentation: { requestHandler: false },
+    }),
+  ],
 });

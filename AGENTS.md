@@ -19,6 +19,7 @@ Newsletter em português sobre tecnologia, com curadoria de **profissionais de t
 | Segredos | Doppler (`introducing-news/dev_personal`) + Netlify env vars + GitHub secrets | nunca em arquivo versionado |
 | CI/CD | Netlify Git integration | build/deploy automático a cada push na `main` |
 | Analytics | GTM (+ Clarity), tracking do Resend e snapshot p/ Google Sheets | dashboard no Looker Studio; heatmap no Clarity |
+| Erros | Sentry (`@sentry/astro` 11) | DSN/ambiente por env; source maps no build; sem DSN nada é enviado |
 | Design | Figma "introducing.news — Design" | tokens espelhados em `src/styles/tokens.css`; guia para IA em `DESIGN.md` (+ `design/` e assets em `public/brand/`) |
 
 ## Estrutura
@@ -45,6 +46,8 @@ src/
   lib/api.ts               # json/clientIp/rate-limit/Turnstile compartilhados pelas APIs
   middleware.ts            # 301 de URLs antigas (/pt/*) + noindex do staging (host)
 keystatic.config.ts        # CMS (coleções "Edições", "Autores" e "E-mails")
+sentry.client.config.js    # init do Sentry no navegador (só erros)
+sentry.server.config.js    # init do Sentry nas páginas SSR (só erros)
 scripts/email-template.mjs # fonte de verdade do layout do e-mail
 scripts/email-body.mjs     # converte o MDX do e-mail em HTML de e-mail
 scripts/welcome-email.mjs  # texto do e-mail de boas-vindas (5 min após inscrever)
@@ -90,6 +93,9 @@ Nunca commite valores. O repositório é público.
 | `TURNSTILE_SECRET_KEY` | Doppler, Netlify env, `.env` local | `siteverify` do Turnstile |
 | `PUBLIC_TURNSTILE_SITE_KEY` | Doppler, Netlify env, `.env` local | widget no navegador (público) |
 | `PUBLIC_GTM_ID` | Netlify env (produção), `.env` local | ID do contêiner do GTM (público); sem ela, nenhum script de terceiros é injetado |
+| `PUBLIC_SENTRY_DSN` | Doppler, Netlify env, `.env` local | DSN do Sentry (público); sem ele, nada é enviado |
+| `PUBLIC_SENTRY_ENVIRONMENT` | Netlify env (production/staging), `.env` local | ambiente nos eventos do Sentry (fallback: `MODE`) |
+| `SENTRY_AUTH_TOKEN` | Doppler, Netlify env, `.env` local | upload de source maps no build (segredo; sem ele o upload é pulado) |
 | `GOOGLE_SHEET_ID` | Doppler, GitHub secret | planilha do snapshot de analytics |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | Doppler, GitHub secret | service account (JSON) com acesso de Editor à planilha |
 
@@ -150,6 +156,14 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 - **Looker Studio (setup manual, uma vez)**: criar a planilha; criar a service account no Google Cloud e baixar o JSON; **compartilhar a planilha com o e-mail da service account como Editor**; guardar `GOOGLE_SHEET_ID` e `GOOGLE_SERVICE_ACCOUNT_JSON` (Doppler + GitHub secrets); conectar o Sheet ao Looker (conector nativo) e montar as páginas (visão geral, edições, links). O heatmap fica no painel do Clarity — a API dele (10 req/dia, 3 dias) não serve como fonte do Looker.
 - Local: `doppler run -p introducing-news -c dev_personal -- npm run analytics:sync`; para testar sem Google, `node scripts/analytics-snapshot.mjs --dry-run` (CSVs no temporário).
 
+### Erros (Sentry)
+
+- `sentry.client.config.js` (navegador) e `sentry.server.config.js` (SSR) inicializam o SDK só para erros (sem tracing/replay); o `environment` vem de `PUBLIC_SENTRY_ENVIRONMENT` (fallback: `MODE`). Sem `PUBLIC_SENTRY_DSN`, nada é enviado.
+- **Source maps**: o `sentry()` do `astro.config.mjs` gera os maps (`hidden`) e sobe com debug IDs no build usando `SENTRY_AUTH_TOKEN`; sem o token o upload é pulado com aviso. O release é detectado do git.
+- **`autoInstrumentation.requestHandler: false`**: o middleware automático do SDK importa `@sentry/node`, incompatível com a Edge Function (`middlewareMode: 'edge'`). Desligado, a Edge Function fica limpa; em troca, erros tratados nas APIs não são capturados (se precisar, chame `Sentry.captureException` na rota).
+- CSP: o host de ingest (`*.ingest.us.sentry.io`) está no `connect-src` de `public/_headers`.
+- Projeto: `davi-carneiro/introducing-news`; o staging reporta no mesmo projeto com `environment=staging`.
+
 ### Deploy
 
 - Push na `main` → **Netlify Git integration**: build (`npm run build`) + deploy automáticos. Projeto `introducing-news` (site id `01f3f0c5-38b4-42da-8f75-bdf5fdbd5bb8`).
@@ -182,6 +196,7 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 15. **Staging fora das métricas**: o GTM só é injetado com `PUBLIC_GTM_ID` (definida apenas na produção) e o snapshot filtra pelo segmento "Assinantes" (`RESEND_SEGMENT_ID`) — não remova esses filtros, ou os testes entram nos números.
 16. **CSP + tags**: tags novas no GTM podem exigir domínios novos na CSP de `public/_headers` (ex.: Facebook/Meta, Hotjar); confira o console por erros de CSP depois de mudar o contêiner.
 17. **Indexação de e-mails no Resend**: a lista de e-mails (painel e `GET /emails`) demora alguns minutos para mostrar envios de automação; o boas-vindas sai 5 min após o evento. Atraso não é falha — confira `last_event: delivered` antes de investigar.
+18. **Sentry + Edge Function**: o middleware automático do `@sentry/astro` (que importa `@sentry/node`) não roda na Edge Function do Netlify (`middlewareMode: 'edge'`; o adapter empacota com esbuild `platform: 'neutral'` e só aceita imports `node:`). Mantemos `autoInstrumentation.requestHandler: false` — não reative sem testar os redirects (`/pt/*`) e o noindex do staging.
 
 ## Decisões de escopo
 
@@ -192,7 +207,7 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 
 ## Segurança
 
-- Antes de commitar: `git diff --cached | grep -E "re_[A-Za-z0-9]{20,}|0x4AAAAA|ghp_|dp\.pt\."` (deve ser vazio).
+- Antes de commitar: `git diff --cached | grep -E "re_[A-Za-z0-9]{20,}|0x4AAAAA|ghp_|dp\.pt\.|sntry[su]_"` (deve ser vazio).
 - `.env*`, `dist/`, `.netlify/` são gitignored — mantenha assim.
 - Formulário: e-mail validado, consentimento obrigatório, Turnstile e rate limit por IP; a API **não** expõe nenhum endpoint de leitura de contatos.
 - O snapshot de analytics grava **apenas métricas agregadas** no Google Sheet; nunca exporte e-mails de assinantes para planilhas, logs, issues ou mensagens.
@@ -202,7 +217,7 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 
 ## Upgrades
 
-1. `npm outdated` → atualize com parcimônia, mantendo os pares compatíveis: `@astrojs/netlify` 8 ↔ Astro 7; `@keystatic/astro` 6 ↔ Astro 5/6/7; React 19 (usado só pelo CMS).
+1. `npm outdated` → atualize com parcimônia, mantendo os pares compatíveis: `@astrojs/netlify` 8 ↔ Astro 7; `@sentry/astro` 11 ↔ Astro 7 / `@astrojs/netlify` 8; `@keystatic/astro` 6 ↔ Astro 5/6/7; React 19 (usado só pelo CMS).
 2. `npm run check` → `npm run build` → smoke test com `npm run dev` (home, arquivo, post, RSS, `/keystatic`, `POST /api/subscribe` com e-mail inválido).
 3. `npm audit` — vulnerabilidades em tooling de build; avalie antes de forçar correções.
 4. Deploy via push na `main` e confira o deploy na Netlify.
@@ -212,5 +227,5 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 - Pendências e melhorias: [issues do repositório](https://github.com/daviccarneiro/introducing.news/issues).
 - Figma: arquivo "introducing.news — Design" (Fundações/Componentes/Telas; tokens espelhados no CSS).
 - Marca e estilo para pessoas e agentes de IA: `DESIGN.md` (voz, cores, tipografia, imagens, prompts). Assets prontos: `public/brand/` (logo, ícone, capas), tokens legíveis por máquina em `design/tokens.json` e fontes OFL em `design/fonts/`.
-- Painéis: Resend (Domains/Contacts/Segments/Broadcasts), Netlify (projeto `introducing-news`), Cloudflare (DNS da zona + Turnstile), Doppler (projeto `introducing-news`), Google Tag Manager (contêiner `GTM-TFKQKWHD`), Microsoft Clarity (heatmap do site) e Looker Studio (relatório do Sheet de analytics).
+- Painéis: Resend (Domains/Contacts/Segments/Broadcasts), Netlify (projeto `introducing-news`), Cloudflare (DNS da zona + Turnstile), Doppler (projeto `introducing-news`), Sentry (erros do site), Google Tag Manager (contêiner `GTM-TFKQKWHD`), Microsoft Clarity (heatmap do site) e Looker Studio (relatório do Sheet de analytics).
 - Rotas de API: `POST /api/subscribe` (inscrição), `/api/keystatic/*` (CMS), `/keystatic` (admin).
