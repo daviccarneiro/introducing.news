@@ -138,7 +138,7 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 - Assunto e kicker trazem a **data da edição** (`publishedAt`, ex.: "5 de outubro de 2026"); o assunto é `#N - assunto` (número da edição + assunto da coleção E-mails, com fallback no título).
 - O rodapé aponta "cancelar inscrição" para `/descadastrar` (ver "Descadastro").
 - Workflow **Newsletter** (Actions → Run workflow, input `slug`) roda o script. O slug é validado (`^[a-z0-9-]+$`) e passado por env (nunca interpolado direto em `run:`).
-- Remetente: `introducing.news <oi@introducing.news>`. Unsubscribe gerenciado pelo Resend.
+- Remetente: `introducing.news <oi@introducing.news>`. Unsubscribe gerenciado pelo Resend. Respostas caem em `oi@introducing.news` e são encaminhadas via Cloudflare Email Routing (ver "Deploy").
 
 ### Analytics
 
@@ -156,7 +156,8 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 - Workflow **Publicar batch**: acionado por commits em `src/content/posts/**` e por cron (toda segunda, 07:45 BRT); só age quando há edição programada, vencida e completa (ver "Conteúdo"). O push na `main` dispara o build da Netlify.
 - Workflow **Analytics**: cron semanal (segundas, 08:30 BRT) + dispatch manual; sem `GOOGLE_SHEET_ID`/`GOOGLE_SERVICE_ACCOUNT_JSON` configurados, encerra com aviso sem falhar.
 - O site é servido por uma **SSR Function** (rotas de API e Keystatic) e uma **Middleware Edge Function** (redirects de `/pt` e `/en`).
-- **DNS (Cloudflare, cinza/DNS-only — fora do repo)**: apex `introducing.news` → A `75.2.60.5` (load balancer da Netlify; **sem AAAA** — o LB não tem IPv6); `www` e `cms` → CNAME `introducing-news.netlify.app`; `staging` → CNAME `introducing-news-staging.netlify.app`. O domínio é registrado na Cloudflare Registrar (a zona **não** pode ser apagada nem usar nameservers externos). A Cloudflare guarda **apenas o DNS e o Turnstile** deste projeto — os Workers e as regras de zona foram removidos.
+- **DNS (Cloudflare, cinza/DNS-only — fora do repo)**: apex `introducing.news` → A `75.2.60.5` (load balancer da Netlify; **sem AAAA** — o LB não tem IPv6); `www` e `cms` → CNAME `introducing-news.netlify.app`; `staging` → CNAME `introducing-news-staging.netlify.app`. O domínio é registrado na Cloudflare Registrar (a zona **não** pode ser apagada nem usar nameservers externos). A Cloudflare guarda **apenas o DNS, o Turnstile e o Email Routing** deste projeto — os Workers e as regras de zona foram removidos.
+- **Respostas de assinantes**: o apex tem MX do **Cloudflare Email Routing** (`route1/2/3.mx.cloudflare.net`) e SPF próprio, com a regra `oi@introducing.news` → e-mail pessoal do mantenedor (destino verificado). É por aí que chegam as respostas (o boas-vindas convida a responder); não remova esses MX/SPF do apex. O envio continua no Resend pelo subdomínio `send`.
 - **Canônico / `www`**: o host canônico é o apex `https://introducing.news`; `www` → **301** para o apex (regra `[[redirects]]` no `netlify.toml`, preserva path e query).
 - **CMS**: `https://cms.introducing.news` → 302 para `https://introducing.news/keystatic` (regra no `netlify.toml`). O login do GitHub fica no domínio principal — por isso é redirect, e não um domínio próprio.
 - URLs antigas de quando o site era bilíngue redirecionam 301 pelo `src/middleware.ts` (`/pt/*`, `/en/*` → rotas atuais), que roda na Edge Function.
@@ -180,6 +181,7 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 14. **Retenção do Resend**: 30 dias para dados de e-mail no plano padrão; o snapshot semanal é o que preserva o histórico do dashboard.
 15. **Staging fora das métricas**: o GTM só é injetado com `PUBLIC_GTM_ID` (definida apenas na produção) e o snapshot filtra pelo segmento "Assinantes" (`RESEND_SEGMENT_ID`) — não remova esses filtros, ou os testes entram nos números.
 16. **CSP + tags**: tags novas no GTM podem exigir domínios novos na CSP de `public/_headers` (ex.: Facebook/Meta, Hotjar); confira o console por erros de CSP depois de mudar o contêiner.
+17. **Indexação de e-mails no Resend**: a lista de e-mails (painel e `GET /emails`) demora alguns minutos para mostrar envios de automação; o boas-vindas sai 5 min após o evento. Atraso não é falha — confira `last_event: delivered` antes de investigar.
 
 ## Decisões de escopo
 
