@@ -197,6 +197,7 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 16. **CSP + tags**: tags novas no GTM podem exigir domínios novos na CSP de `public/_headers` (ex.: Facebook/Meta, Hotjar); confira o console por erros de CSP depois de mudar o contêiner.
 17. **Indexação de e-mails no Resend**: a lista de e-mails (painel e `GET /emails`) demora alguns minutos para mostrar envios de automação; o boas-vindas sai 5 min após o evento. Atraso não é falha — confira `last_event: delivered` antes de investigar.
 18. **Sentry + Edge Function**: o middleware automático do `@sentry/astro` (que importa `@sentry/node`) não roda na Edge Function do Netlify (`middlewareMode: 'edge'`; o adapter empacota com esbuild `platform: 'neutral'` e só aceita imports `node:`). Mantemos `autoInstrumentation.requestHandler: false` — não reative sem testar os redirects (`/pt/*`) e o noindex do staging.
+19. **`_headers` um deploy atrasado**: depois de mudar `public/_headers` (ex.: CSP), a Netlify pode continuar servindo os headers antigos mesmo com arquivos novos no ar — e `purge` de cache não resolve. Um novo build (ex.: commit vazio, como em `50d7f58`) aplica o arquivo novo. Sempre confira o header na produção depois de publicar: `curl -sI https://introducing.news/ | grep -i content-security-policy`.
 
 ## Decisões de escopo
 
