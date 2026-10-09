@@ -22,7 +22,7 @@
 import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import matter from 'gray-matter';
+import { parseFrontmatter } from './frontmatter.mjs';
 import { buildEmail } from './email-template.mjs';
 import { renderEmailBody } from './email-body.mjs';
 
@@ -95,7 +95,7 @@ async function findEmailFor(edition) {
   const matches = [];
   for (const name of names) {
     const raw = await readFile(new URL(name, EMAILS_DIR), 'utf8');
-    const email = matter(raw);
+    const email = parseFrontmatter(raw);
     if (email.data.edition === edition) matches.push({ name, ...email });
   }
   if (matches.length > 1) {
@@ -113,7 +113,7 @@ try {
   process.exit(1);
 }
 
-const { data } = matter(raw);
+const { data } = parseFrontmatter(raw);
 if (data.status !== 'published') {
   console.error(`✖ Status "${data.status ?? 'draft'}" — só edições publicadas podem ser enviadas.`);
   process.exit(1);

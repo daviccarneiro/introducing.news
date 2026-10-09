@@ -7,6 +7,7 @@
     "dev": "astro dev",
     "build": "astro build",
     "preview": "astro preview",
+    "test": "node --test scripts/*.test.mjs",
     "check": "astro check",
     "deploy": "netlify deploy --prod",
     "newsletter": "node scripts/send-newsletter.mjs",
@@ -32,13 +33,14 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "@types/node": "^26.6.4",
-    "gray-matter": "^4.0.3",
     "marked": "^18.1.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "yaml": "^2.9.1"
   },
   "overrides": {
     "astro-typewriter": {
       "astro": "$astro"
-    }
+    },
+    "sharp": "^0.35.5"
   }
 }
