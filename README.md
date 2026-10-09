@@ -15,7 +15,7 @@ Newsletter em português com curadoria de novidades de tecnologia: novos modelos
 | Segredos | [Doppler](https://doppler.com) (local) + GitHub Actions secrets (CI) |
 | Deploy | GitHub Actions → `wrangler deploy` |
 
-Design: arquivo `introducing.news — Design` no Figma. Os tokens (cores, tipografia, espaçamento, raios) estão espelhados em `src/styles/tokens.css`.
+Design: arquivo `introducing.news — Design` no Figma. Os tokens (cores, tipografia, espaçamento, raios) estão espelhados em `src/styles/tokens.css`; o guia de marca para pessoas e agentes de IA (com prompts de imagem e assets) está em `DESIGN.md`.
 
 ## Estrutura
 
