@@ -3,6 +3,7 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { RESEND_API_KEY, RESEND_SEGMENT_ID } from 'astro:env/server';
 import { clientIp, isRateLimited, json, verifyTurnstile } from '../../lib/api';
+import { bumpDay, sourceOf } from '../../lib/metrics';
 
 const RATE_LIMIT = { scope: 'subscribe', max: 5, windowSeconds: 600 };
 
@@ -132,6 +133,14 @@ export const POST: APIRoute = async ({ request }) => {
     console.error('subscribe: falha no Resend', response.status, await response.text());
     return json({ error: 'Não foi possível concluir a inscrição. Tente de novo.' }, 502);
   }
+
+  // Contador do painel: inscrição nova (com origem) ou reinscrição.
+  const utmSource = new URLSearchParams(utm).get('utm_source') ?? '';
+  await bumpDay(
+    isNewContact
+      ? { signups: 1, signupSource: sourceOf(referrer, utmSource, new URL(request.url).hostname) }
+      : { resubscribes: 1 },
+  );
 
   // Só na primeira inscrição: dispara a automação de boas-vindas do Resend
   // (evento definido em `scripts/welcome-email.mjs`). Reinscrições não

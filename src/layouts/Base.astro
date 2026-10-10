@@ -85,5 +85,16 @@ const gtmId = import.meta.env.PUBLIC_GTM_ID;
       <slot />
     </main>
     <SiteFooter />
+    {/* Contador próprio do painel (/painel): sem cookie, só soma visitas do dia. */}
+    <script is:inline>
+      (function () {
+        try {
+          var r = document.referrer;
+          var e = !r || new URL(r).host !== location.host;
+          var u = new URLSearchParams(location.search).get('utm_source') || '';
+          navigator.sendBeacon('/api/hit', JSON.stringify({ e: e, r: e ? r : '', u: u }));
+        } catch (_) {}
+      })();
+    </script>
   </body>
 </html>

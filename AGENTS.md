@@ -41,9 +41,13 @@ src/
     ultima.ts              # 302 para a edição publicada mais recente
     api/subscribe.ts       # inscrição (valida, rate-limit, Turnstile, Resend)
     api/unsubscribe.ts     # descadastro (mesmas defesas; PATCH unsubscribed no Resend)
+    api/hit.ts             # beacon de página vista (contador diário, sem cookie)
+    painel.astro           # painel de métricas privado (Basic Auth, mobile-first)
   components/              # SiteHeader, SiteFooter, PostCard, Cover, Badge, SubscribeForm
   lib/posts.ts             # consultas, autor da assinatura, readingTime, formatDate
   lib/api.ts               # json/clientIp/rate-limit/Turnstile compartilhados pelas APIs
+  lib/metrics.ts           # contadores diários no Netlify Blobs (visitas, inscrições, descadastros, origens)
+  lib/dashboard.ts         # dados do /painel (Resend com cache de 10 min + contadores)
   middleware.ts            # 301 de URLs antigas (/pt/*) + noindex do staging (host)
 keystatic.config.ts        # CMS (coleções "Edições", "Autores" e "E-mails")
 sentry.client.config.js    # init do Sentry no navegador (só erros)
@@ -92,6 +96,7 @@ Nunca commite valores. O repositório é público.
 | `PUBLIC_KEYSTATIC_GITHUB_APP_SLUG` | Doppler, Netlify env, `.env` local | liga o modo GitHub do Keystatic (vai inline no bundle; é público) |
 | `TURNSTILE_SECRET_KEY` | Doppler, Netlify env, `.env` local | `siteverify` do Turnstile |
 | `PUBLIC_TURNSTILE_SITE_KEY` | Doppler, Netlify env, `.env` local | widget no navegador (público) |
+| `DASHBOARD_PASSWORD` | Doppler, Netlify env (produção), `.env` local | senha do `/painel` (Basic Auth); sem ela o painel responde 404 |
 | `PUBLIC_GTM_ID` | Netlify env (produção), `.env` local | ID do contêiner do GTM (público); sem ela, nenhum script de terceiros é injetado |
 | `PUBLIC_SENTRY_DSN` | Doppler, Netlify env, `.env` local | DSN do Sentry (público); sem ele, nada é enviado |
 | `PUBLIC_SENTRY_ENVIRONMENT` | Netlify env (production/staging), `.env` local | ambiente nos eventos do Sentry (fallback: `MODE`) |
@@ -148,6 +153,8 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 
 ### Analytics
 
+- **Painel (`/painel`)**: dashboard privado e mobile-first, renderizado no servidor (SSR) a cada acesso. Basic Auth com `DASHBOARD_PASSWORD` (qualquer usuário); 10 senhas erradas por IP bloqueiam por 15 min; `Cache-Control: private, no-store` + `noindex`. Períodos `?p=7|30|90`; `&atualizar` ignora o cache do Resend (10 min, no Blobs). Mostra assinantes ativos, novas inscrições, descadastros, churn (descadastros ÷ ativos no início do período), conversão (inscrições ÷ visitas), visitas, origens, métricas da última edição (abertura, CTR, clique ÷ abertura, bounces, links) e tabela de edições, com variação contra o período anterior.
+- **Contadores próprios** (`src/lib/metrics.ts`, store `metrics` do Netlify Blobs, chave `day/AAAA-MM-DD`): o beacon de `Base.astro` → `POST /api/hit` soma páginas vistas e "visitas" (página com referrer externo ou vazio) e a origem (`utm_source` ou host do referrer); `/api/subscribe` soma inscrições (com origem) e reinscrições; `/api/unsubscribe` soma descadastros. Sem cookie, sem IP e sem e-mail — só números por dia. Inscrições históricas vêm do Resend (`created_at`); visitas, reinscrições e descadastros com data só existem a partir da ativação do painel. Staging tem Blobs próprio (não mistura).
 - **GTM + Clarity**: `PUBLIC_GTM_ID` (definida só na Netlify de produção) injeta o Google Tag Manager no `<head>` e o fallback `<noscript>` no `<body>`; o Clarity é carregado por uma tag dentro do GTM — não há snippet dele no código. Sem a env (dev e staging), nenhum script de terceiros é injetado, para não poluir os dados.
 - **Tracking no Resend**: open + click tracking ligados no domínio `introducing.news`, com subdomínio `links.introducing.news` (CNAME **DNS only** → `links2.resend-dns.com`). O click tracking reescreve os links do e-mail para passar por esse subdomínio; aberturas vêm de um pixel 1×1 e são infladas por Apple Mail/Mail Privacy Protection — prefira a taxa de clique.
 - **Properties de atribuição/churn**: `signup_referrer`, `signup_utm` e `unsubscribed_at` — criadas via API no Resend (propriedade só grava se a chave existir). O CTA do e-mail leva `utm_source=newsletter&utm_medium=email&utm_campaign=edicao-<slug>` (montado no `send-newsletter.mjs`), então a origem "newsletter" aparece no snapshot.
@@ -229,4 +236,4 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 - Figma: arquivo "introducing.news — Design" (Fundações/Componentes/Telas; tokens espelhados no CSS).
 - Marca e estilo para pessoas e agentes de IA: `DESIGN.md` (voz, cores, tipografia, imagens, prompts). Assets prontos: `public/brand/` (logo, ícone, capas), tokens legíveis por máquina em `design/tokens.json` e fontes OFL em `design/fonts/`.
 - Painéis: Resend (Domains/Contacts/Segments/Broadcasts), Netlify (projeto `introducing-news`), Cloudflare (DNS da zona + Turnstile), Doppler (projeto `introducing-news`), Sentry (erros do site), Google Tag Manager (contêiner `GTM-TFKQKWHD`), Microsoft Clarity (heatmap do site) e Looker Studio (relatório do Sheet de analytics).
-- Rotas de API: `POST /api/subscribe` (inscrição), `/api/keystatic/*` (CMS), `/keystatic` (admin).
+- Rotas de API: `POST /api/subscribe` (inscrição), `POST /api/unsubscribe` (descadastro), `POST /api/hit` (contador de visitas), `/painel` (métricas, privado), `/api/keystatic/*` (CMS), `/keystatic` (admin).

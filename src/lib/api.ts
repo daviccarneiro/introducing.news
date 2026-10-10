@@ -24,6 +24,8 @@ export const isRateLimited = async (
   scope: string,
   max = 5,
   windowSeconds = 600,
+  /** Só consulta, sem contar esta requisição. */
+  peek = false,
 ): Promise<boolean> => {
   if (!ip) return false;
   try {
@@ -35,6 +37,7 @@ export const isRateLimited = async (
       | null;
     const active = entry?.resetAt != null && entry.resetAt > now;
     if (active && (entry?.count ?? 0) >= max) return true;
+    if (peek) return false;
     await store.setJSON(key, {
       count: active ? (entry?.count ?? 0) + 1 : 1,
       resetAt: active ? entry?.resetAt : now + windowSeconds * 1000,

@@ -21,6 +21,9 @@ export default defineConfig({
       // Resend (inscrição/descadastro no site).
       RESEND_API_KEY: envField.string({ context: 'server', access: 'secret', optional: true }),
       RESEND_SEGMENT_ID: envField.string({ context: 'server', access: 'secret', optional: true }),
+      // Senha do painel de métricas (/painel, Basic Auth). Sem ela, o painel
+      // responde 404.
+      DASHBOARD_PASSWORD: envField.string({ context: 'server', access: 'secret', optional: true }),
       // Cloudflare Turnstile (CAPTCHA) na inscrição — o widget funciona em
       // qualquer hospedagem; só o `siteverify` é chamado pelo servidor.
       TURNSTILE_SECRET_KEY: envField.string({ context: 'server', access: 'secret', optional: true }),

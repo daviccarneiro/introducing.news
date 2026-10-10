@@ -1,0 +1,595 @@
+---
+export const prerender = false;
+
+import { timingSafeEqual, createHash } from 'node:crypto';
+import { DASHBOARD_PASSWORD, RESEND_API_KEY, RESEND_SEGMENT_ID } from 'astro:env/server';
+import { clientIp, isRateLimited } from '../lib/api';
+import { dashboardData, type DayRow } from '../lib/dashboard';
+
+/**
+ * Painel de métricas (privado). Basic Auth com `DASHBOARD_PASSWORD`
+ * (qualquer usuário); sem a env, a rota responde 404. Erros de senha contam
+ * no rate limit por IP (10 a cada 15 min) e bloqueiam até a janela passar.
+ */
+const { request, url } = Astro;
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+
+if (!DASHBOARD_PASSWORD || !RESEND_API_KEY || !RESEND_SEGMENT_ID) {
+  return new Response('Not found', { status: 404 });
+}
+
+const LOCK = { scope: 'painel-auth', max: 10, windowSeconds: 900 };
+const ip = clientIp(request);
+if (await isRateLimited(ip, LOCK.scope, LOCK.max, LOCK.windowSeconds, true)) {
+  return new Response('Muitas tentativas. Tente mais tarde.', {
+    status: 429,
+    headers: { 'Retry-After': String(LOCK.windowSeconds) },
+  });
+}
+
+const digest = (value: string) => createHash('sha256').update(value).digest();
+const header = request.headers.get('authorization') ?? '';
+let password = '';
+if (header.startsWith('Basic ')) {
+  try {
+    const decoded = atob(header.slice(6));
+    password = decoded.slice(decoded.indexOf(':') + 1);
+  } catch {
+    password = '';
+  }
+}
+if (!password || !timingSafeEqual(digest(password), digest(DASHBOARD_PASSWORD))) {
+  if (password) await isRateLimited(ip, LOCK.scope, LOCK.max, LOCK.windowSeconds);
+  return new Response('Acesso restrito.', {
+    status: 401,
+    headers: {
+      'WWW-Authenticate': 'Basic realm="introducing.news painel", charset="UTF-8"',
+      'Cache-Control': 'no-store',
+    },
+  });
+}
+
+const PERIODS = [7, 30, 90] as const;
+const requested = Number(url.searchParams.get('p'));
+const period = (PERIODS as readonly number[]).includes(requested) ? requested : 30;
+const refresh = url.searchParams.has('atualizar');
+
+let data: Awaited<ReturnType<typeof dashboardData>> | null = null;
+let failure = '';
+try {
+  data = await dashboardData(period, refresh);
+} catch (error) {
+  console.error('painel: falha ao montar dados', error);
+  failure = 'Não foi possível ler os dados do Resend agora. Tente atualizar em instantes.';
+}
+
+// --- Formatação --------------------------------------------------------------
+
+const int = new Intl.NumberFormat('pt-BR');
+const pct = (value: number | null, digits = 1) =>
+  value == null ? '—' : `${(value * 100).toLocaleString('pt-BR', { maximumFractionDigits: digits, minimumFractionDigits: 0 })}%`;
+const signed = (value: number) => (value > 0 ? `+${int.format(value)}` : int.format(value));
+const dayLabel = (day: string, style: 'short' | 'long' = 'short') =>
+  new Date(`${day}T12:00:00-03:00`).toLocaleDateString('pt-BR', {
+    day: 'numeric',
+    month: style === 'short' ? 'short' : 'long',
+    timeZone: 'America/Sao_Paulo',
+    ...(style === 'long' ? { weekday: 'short' } : {}),
+  });
+const ago = (iso: string) => {
+  const minutes = Math.max(0, Math.round((Date.now() - Date.parse(iso)) / 60000));
+  return minutes < 1 ? 'agora' : minutes < 60 ? `há ${minutes} min` : `há ${Math.round(minutes / 60)} h`;
+};
+
+/** Variação contra o período anterior: texto + se a direção é boa. */
+const delta = (current: number | null, previous: number | null, upIsGood = true, asPoints = false) => {
+  if (current == null || previous == null) return null;
+  const diff = current - previous;
+  if (Math.abs(diff) < 1e-9) return { text: 'igual ao período anterior', tone: 'flat' };
+  const text = asPoints
+    ? `${diff > 0 ? '+' : '−'}${(Math.abs(diff) * 100).toLocaleString('pt-BR', { maximumFractionDigits: 1 })} p.p.`
+    : `${diff > 0 ? '+' : '−'}${int.format(Math.abs(diff))}`;
+  return { text: `${text} vs ${period} dias anteriores`, tone: diff > 0 === upIsGood ? 'good' : 'bad' };
+};
+
+// --- Gráficos (SVG no servidor) -----------------------------------------------
+
+const W = 340;
+const PAD = { top: 10, right: 4, bottom: 18, left: 28 };
+const plotW = W - PAD.left - PAD.right;
+
+/** Coluna com ponta arredondada (4px) e base reta. */
+const column = (x: number, width: number, base: number, height: number, up: boolean) => {
+  if (height <= 0) return '';
+  const r = Math.min(4, width / 2, height);
+  const end = up ? base - height : base + height;
+  const dir = up ? 1 : -1;
+  return [
+    `M${x},${base}`,
+    `V${end + dir * r}`,
+    `Q${x},${end} ${x + r},${end}`,
+    `H${x + width - r}`,
+    `Q${x + width},${end} ${x + width},${end + dir * r}`,
+    `V${base}Z`,
+  ].join(' ');
+};
+
+const niceMax = (value: number) => {
+  if (value <= 4) return Math.max(1, Math.ceil(value));
+  const magnitude = 10 ** Math.floor(Math.log10(value));
+  const step = [1, 2, 2.5, 5, 10].find((s) => s * magnitude >= value / 2) ?? 10;
+  return Math.ceil(value / (step * magnitude)) * step * magnitude;
+};
+
+const band = (rows: DayRow[]) => {
+  const slot = plotW / Math.max(rows.length, 1);
+  const width = Math.max(1, Math.min(24, slot - 2));
+  return { slot, width, offset: (slot - width) / 2 };
+};
+
+/** Rótulos do eixo x: primeiro, meio e último dia. */
+const xTicks = (rows: DayRow[]) => {
+  if (!rows.length) return [];
+  const { slot } = band(rows);
+  const picks = [...new Set([0, Math.floor((rows.length - 1) / 2), rows.length - 1])];
+  return picks.map((index) => ({
+    x: PAD.left + slot * index + slot / 2,
+    label: dayLabel(rows[index]!.day),
+    anchor: index === 0 ? 'start' : index === rows.length - 1 ? 'end' : 'middle',
+  }));
+};
+
+const flowChart = (rows: DayRow[]) => {
+  const H = 170;
+  const plotH = H - PAD.top - PAD.bottom;
+  const maxUp = niceMax(Math.max(...rows.map((row) => row.signups + row.resubscribes), 1));
+  const maxDown = Math.max(...rows.map((row) => row.unsubscribes), 0);
+  const down = maxDown > 0 ? niceMax(maxDown) : 0;
+  const range = maxUp + down;
+  const base = PAD.top + (plotH * maxUp) / range;
+  const scale = plotH / range;
+  const { slot, width, offset } = band(rows);
+  return {
+    H,
+    base,
+    ticks: [
+      { y: PAD.top, label: int.format(maxUp) },
+      { y: base, label: '0' },
+      ...(down ? [{ y: PAD.top + plotH, label: `−${int.format(down)}` }] : []),
+    ],
+    bars: rows.map((row, index) => {
+      const x = PAD.left + slot * index + offset;
+      return {
+        row,
+        hitX: PAD.left + slot * index,
+        up: column(x, width, base - 1, (row.signups + row.resubscribes) * scale, true),
+        down: column(x, width, base + 1, row.unsubscribes * scale, false),
+      };
+    }),
+    slot,
+  };
+};
+
+const visitsChart = (rows: DayRow[]) => {
+  const H = 130;
+  const plotH = H - PAD.top - PAD.bottom;
+  const max = niceMax(Math.max(...rows.map((row) => row.visits), 1));
+  const base = PAD.top + plotH;
+  const { slot, width, offset } = band(rows);
+  return {
+    H,
+    base,
+    ticks: [
+      { y: PAD.top, label: int.format(max) },
+      { y: PAD.top + plotH / 2, label: int.format(max / 2) },
+      { y: base, label: '0' },
+    ],
+    bars: rows.map((row, index) => ({
+      row,
+      hitX: PAD.left + slot * index,
+      path: column(PAD.left + slot * index + offset, width, base, (row.visits / max) * plotH, true),
+    })),
+    slot,
+  };
+};
+
+const flow = data ? flowChart(data.rows) : null;
+const visits = data ? visitsChart(data.rows) : null;
+const ticksX = data ? xTicks(data.rows) : [];
+
+const rowJson = (row: DayRow) =>
+  JSON.stringify({
+    d: dayLabel(row.day, 'long'),
+    s: row.signups,
+    r: row.resubscribes,
+    u: row.unsubscribes,
+    v: row.visits,
+    c: row.visits > 0 ? pct(row.signups / row.visits) : '—',
+  });
+
+const t = data?.totals;
+const prev = data?.previous;
+const latest = data?.snapshot.editions[0];
+const rate = (value: number, total: number) => (total > 0 ? value / total : null);
+const maxSource = (list: { count: number }[]) => Math.max(...list.map((item) => item.count), 1);
+const shortUrl = (value: string) => {
+  try {
+    const parsed = new URL(value);
+    return `${parsed.hostname.replace(/^www\./, '')}${parsed.pathname === '/' ? '' : parsed.pathname}`;
+  } catch {
+    return value;
+  }
+};
+---
+
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="robots" content="noindex, nofollow" />
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#0b0b0c" media="(prefers-color-scheme: dark)" />
+    <meta name="apple-mobile-web-app-title" content="Painel" />
+    <title>Painel · introducing.news</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&display=swap" rel="stylesheet" />
+    <style is:inline>
+      :root {
+        color-scheme: light;
+        --bg: #f9f9fb;
+        --card: #ffffff;
+        --fg: #0b0b0c;
+        --fg-2: #4b4b55;
+        --muted: #6b6b76;
+        --border: #e4e4e9;
+        --grid: #ececf0;
+        --accent: #e06c0f;
+        --accent-soft: #fff6ed;
+        --series-in: #e06c0f;
+        --series-out: #2a78d6;
+        --series-visits: #6b6b76;
+        --good: #1f7a3d;
+        --bad: #b42318;
+        --hl: rgba(11, 11, 12, 0.06);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          color-scheme: dark;
+          --bg: #0b0b0c;
+          --card: #141417;
+          --fg: #f2f2f5;
+          --fg-2: #c9c9d1;
+          --muted: #9a9aa4;
+          --border: #26262b;
+          --grid: #222227;
+          --accent: #f6821f;
+          --accent-soft: #2a1a0c;
+          --series-in: #d95926;
+          --series-out: #3987e5;
+          --series-visits: #8e8e99;
+          --good: #5cc77f;
+          --bad: #f97066;
+          --hl: rgba(255, 255, 255, 0.07);
+        }
+      }
+      * { box-sizing: border-box; }
+      html { -webkit-text-size-adjust: 100%; }
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--fg);
+        font: 15px/1.45 'Geist', system-ui, -apple-system, sans-serif;
+        padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
+      }
+      .wrap { max-width: 760px; margin: 0 auto; padding: 16px 16px 48px; }
+      header { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+      .brand { font-weight: 600; letter-spacing: -0.01em; }
+      .brand span { color: var(--accent); }
+      .periods { display: inline-flex; background: var(--card); border: 1px solid var(--border); border-radius: 999px; padding: 3px; }
+      .periods a { padding: 6px 12px; border-radius: 999px; color: var(--fg-2); text-decoration: none; font-size: 13px; font-weight: 500; }
+      .periods a[aria-current='page'] { background: var(--fg); color: var(--card); }
+      .meta { font-size: 12px; color: var(--muted); width: 100%; display: flex; gap: 8px; align-items: center; }
+      .meta a { color: var(--fg-2); }
+      .card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+      h2 { font-size: 13px; font-weight: 500; color: var(--fg-2); margin: 0 0 4px; }
+      .sub { font-size: 12px; color: var(--muted); margin: 0 0 12px; }
+      .hero-value { font-size: 52px; font-weight: 600; letter-spacing: -0.03em; line-height: 1.05; }
+      .hero-row { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+      .tiles { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
+      @media (min-width: 620px) { .tiles { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+      .tile { margin: 0; }
+      .tile .value { font-size: 26px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; }
+      .delta { font-size: 12px; margin-top: 4px; color: var(--muted); }
+      .delta.good { color: var(--good); }
+      .delta.bad { color: var(--bad); }
+      .delta.good::before { content: '▲ '; }
+      .delta.bad::before { content: '▼ '; }
+      svg.chart { width: 100%; height: auto; display: block; overflow: visible; touch-action: pan-y; }
+      .chart text { fill: var(--muted); font-size: 9px; font-variant-numeric: tabular-nums; }
+      .chart .grid { stroke: var(--grid); stroke-width: 1; }
+      .chart .axis { stroke: var(--border); stroke-width: 1; }
+      .chart .in { fill: var(--series-in); }
+      .chart .out { fill: var(--series-out); }
+      .chart .visits { fill: var(--series-visits); }
+      .chart .hit { fill: transparent; cursor: pointer; }
+      .chart .hit.on { fill: var(--hl); }
+      .legend { display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: var(--fg-2); margin-bottom: 8px; }
+      .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+      .readout { min-height: 40px; font-size: 13px; color: var(--fg-2); background: var(--bg); border-radius: 8px; padding: 8px 10px; margin-top: 8px; font-variant-numeric: tabular-nums; }
+      .readout strong { color: var(--fg); font-weight: 600; }
+      table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+      th, td { padding: 7px 6px; text-align: right; border-bottom: 1px solid var(--border); white-space: nowrap; }
+      th:first-child, td:first-child { text-align: left; }
+      th { font-weight: 500; color: var(--muted); font-size: 12px; }
+      td.slug { max-width: 150px; overflow: hidden; text-overflow: ellipsis; }
+      .scroll { overflow-x: auto; margin: 0 -16px; padding: 0 16px; }
+      details summary { cursor: pointer; font-size: 13px; color: var(--fg-2); margin-top: 10px; }
+      .bars { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+      .bars li { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 10px; font-size: 13px; }
+      .bars .name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+      .bars .count { font-variant-numeric: tabular-nums; color: var(--fg-2); }
+      .bars .track { grid-column: 1 / -1; height: 6px; background: var(--bg); border-radius: 3px; }
+      .bars .fill { height: 6px; background: var(--accent); border-radius: 3px; min-width: 3px; }
+      .split { display: grid; gap: 12px; }
+      @media (min-width: 620px) { .split { grid-template-columns: 1fr 1fr; } .split .card { margin-bottom: 0; } .split { margin-bottom: 12px; } }
+      .empty { font-size: 13px; color: var(--muted); }
+      .error { border-color: var(--bad); color: var(--bad); }
+      .notes { font-size: 12px; color: var(--muted); margin-top: 20px; }
+      .notes li { margin-bottom: 4px; }
+      .mini { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 12px; margin-bottom: 12px; }
+      @media (min-width: 620px) { .mini { grid-template-columns: repeat(4, minmax(0, 1fr)); } }
+      .mini .label { font-size: 12px; color: var(--muted); }
+      .mini .v { font-size: 20px; font-weight: 600; }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div class="brand">introducing<span>.</span>news · painel</div>
+        <nav class="periods" aria-label="Período">
+          {PERIODS.map((p) => (
+            <a href={`?p=${p}`} aria-current={p === period ? 'page' : undefined}>{p} dias</a>
+          ))}
+        </nav>
+        {data && (
+          <div class="meta">
+            <span>Resend lido {ago(data.snapshot.fetchedAt)}</span>
+            <span>·</span>
+            <a href={`?p=${period}&atualizar`}>atualizar</a>
+          </div>
+        )}
+      </header>
+
+      {failure && <div class="card error">{failure}</div>}
+
+      {data && t && prev && flow && visits && (
+        <>
+          <section class="card" aria-labelledby="ativos">
+            <h2 id="ativos">Assinantes ativos</h2>
+            <div class="hero-row">
+              <div class="hero-value">{int.format(data.snapshot.active)}</div>
+              <div class={`delta ${t.net > 0 ? 'good' : t.net < 0 ? 'bad' : ''}`}>
+                {signed(t.net)} nos últimos {period} dias
+              </div>
+            </div>
+            <p class="sub" style="margin:6px 0 0">
+              {int.format(data.snapshot.total)} contatos no total · {int.format(data.snapshot.unsubscribed)} descadastrados
+            </p>
+          </section>
+
+          <div class="tiles">
+            {[
+              { label: 'Novas inscrições', value: int.format(t.signups), d: delta(t.signups, prev.signups) },
+              { label: 'Descadastros', value: int.format(t.unsubscribes), d: delta(t.unsubscribes, prev.unsubscribes, false) },
+              { label: 'Taxa de churn', value: pct(t.churn, 2), d: delta(t.churn, prev.churn, false, true) },
+              { label: 'Conversão (inscrições ÷ visitas)', value: pct(t.conversion, 2), d: delta(t.conversion, prev.conversion, true, true) },
+              { label: 'Visitas', value: int.format(t.visits), d: delta(t.visits, prev.visits) },
+              { label: 'Páginas vistas', value: int.format(t.views), d: delta(t.views, prev.views) },
+            ].map((tile) => (
+              <div class="card tile">
+                <h2>{tile.label}</h2>
+                <div class="value">{tile.value}</div>
+                {tile.d && <div class={`delta ${tile.d.tone}`}>{tile.d.text}</div>}
+              </div>
+            ))}
+          </div>
+
+          <section class="card" aria-labelledby="fluxo">
+            <h2 id="fluxo">Inscrições e descadastros por dia</h2>
+            <div class="legend">
+              <span><i style="background:var(--series-in)"></i>Inscrições</span>
+              <span><i style="background:var(--series-out)"></i>Descadastros</span>
+            </div>
+            <svg class="chart" data-chart viewBox={`0 0 ${W} ${flow.H}`} role="img" aria-label="Colunas de inscrições (acima) e descadastros (abaixo) por dia">
+              {flow.ticks.map((tick) => (
+                <>
+                  <line class={tick.label === '0' ? 'axis' : 'grid'} x1={PAD.left} x2={W - PAD.right} y1={tick.y} y2={tick.y} />
+                  <text x={PAD.left - 6} y={tick.y + 3} text-anchor="end">{tick.label}</text>
+                </>
+              ))}
+              {flow.bars.map((bar) => (
+                <>
+                  <rect class="hit" x={bar.hitX} y={PAD.top} width={flow.slot} height={flow.H - PAD.top - PAD.bottom} data-row={rowJson(bar.row)} />
+                  {bar.up && <path class="in" d={bar.up} pointer-events="none" />}
+                  {bar.down && <path class="out" d={bar.down} pointer-events="none" />}
+                </>
+              ))}
+              {ticksX.map((tick) => (
+                <text x={tick.x} y={flow.H - 4} text-anchor={tick.anchor}>{tick.label}</text>
+              ))}
+            </svg>
+            <div class="readout" data-readout aria-live="polite">Toque em um dia para ver os números.</div>
+          </section>
+
+          <section class="card" aria-labelledby="visitas">
+            <h2 id="visitas">Visitas por dia</h2>
+            <p class="sub">
+              Entradas no site (referrer externo ou direto), sem cookie.
+              {data.trackedSince ? ` Medido desde ${dayLabel(data.trackedSince, 'long')}.` : ' Ainda sem visitas medidas.'}
+            </p>
+            <svg class="chart" data-chart viewBox={`0 0 ${W} ${visits.H}`} role="img" aria-label="Colunas de visitas por dia">
+              {visits.ticks.map((tick) => (
+                <>
+                  <line class={tick.label === '0' ? 'axis' : 'grid'} x1={PAD.left} x2={W - PAD.right} y1={tick.y} y2={tick.y} />
+                  <text x={PAD.left - 6} y={tick.y + 3} text-anchor="end">{tick.label}</text>
+                </>
+              ))}
+              {visits.bars.map((bar) => (
+                <>
+                  <rect class="hit" x={bar.hitX} y={PAD.top} width={visits.slot} height={visits.H - PAD.top - PAD.bottom} data-row={rowJson(bar.row)} />
+                  {bar.path && <path class="visits" d={bar.path} pointer-events="none" />}
+                </>
+              ))}
+              {ticksX.map((tick) => (
+                <text x={tick.x} y={visits.H - 4} text-anchor={tick.anchor}>{tick.label}</text>
+              ))}
+            </svg>
+            <div class="readout" data-readout aria-live="polite">Toque em um dia para ver os números.</div>
+            <details>
+              <summary>Ver tabela por dia</summary>
+              <div class="scroll">
+                <table>
+                  <thead>
+                    <tr><th>Dia</th><th>Visitas</th><th>Inscrições</th><th>Reinscr.</th><th>Descad.</th><th>Conversão</th></tr>
+                  </thead>
+                  <tbody>
+                    {[...data.rows].reverse().map((row) => (
+                      <tr>
+                        <td>{dayLabel(row.day, 'long')}</td>
+                        <td>{int.format(row.visits)}</td>
+                        <td>{int.format(row.signups)}</td>
+                        <td>{int.format(row.resubscribes)}</td>
+                        <td>{int.format(row.unsubscribes)}</td>
+                        <td>{row.visits > 0 ? pct(row.signups / row.visits) : '—'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </details>
+          </section>
+
+          <div class="split">
+            {[
+              { id: 'origem-inscricoes', title: 'Origem das inscrições', list: data.signupSources },
+              { id: 'origem-visitas', title: 'Origem das visitas', list: data.sources },
+            ].map((block) => (
+              <section class="card" aria-labelledby={block.id}>
+                <h2 id={block.id}>{block.title}</h2>
+                <p class="sub">utm_source ou site de origem, últimos {period} dias</p>
+                {block.list.length ? (
+                  <ul class="bars">
+                    {block.list.map((item) => (
+                      <li>
+                        <span class="name">{item.name}</span>
+                        <span class="count">{int.format(item.count)}</span>
+                        <span class="track"><span class="fill" style={`display:block;width:${(item.count / maxSource(block.list)) * 100}%`}></span></span>
+                      </li>
+                    ))}
+                  </ul>
+                ) : (
+                  <p class="empty">Sem dados no período.</p>
+                )}
+              </section>
+            ))}
+          </div>
+
+          <section class="card" aria-labelledby="ultima">
+            <h2 id="ultima">Última edição enviada</h2>
+            {latest ? (
+              <>
+                <p class="sub">{latest.slug} · {latest.sentAt ? dayLabel(latest.sentAt.slice(0, 10), 'long') : ''} · {int.format(latest.delivered)} entregues</p>
+                <div class="mini">
+                  <div><div class="label">Abertura</div><div class="v">{pct(rate(latest.opened, latest.delivered))}</div></div>
+                  <div><div class="label">Clique (CTR)</div><div class="v">{pct(rate(latest.clicked, latest.delivered))}</div></div>
+                  <div><div class="label">Clique ÷ abertura</div><div class="v">{pct(rate(latest.clicked, latest.opened))}</div></div>
+                  <div><div class="label">Bounces</div><div class="v">{pct(rate(latest.bounced, latest.sent))}</div></div>
+                </div>
+                {data.snapshot.topLinks.length > 0 && (
+                  <ul class="bars">
+                    {data.snapshot.topLinks.map((link) => (
+                      <li>
+                        <span class="name" title={link.url}>{shortUrl(link.url)}</span>
+                        <span class="count">{int.format(link.unique)} únicos</span>
+                        <span class="track"><span class="fill" style={`display:block;width:${(link.unique / Math.max(...data!.snapshot.topLinks.map((l) => l.unique), 1)) * 100}%`}></span></span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </>
+            ) : (
+              <p class="empty">Nenhuma edição enviada ainda.</p>
+            )}
+          </section>
+
+          {data.snapshot.editions.length > 0 && (
+            <section class="card" aria-labelledby="edicoes">
+              <h2 id="edicoes">Todas as edições</h2>
+              <div class="scroll">
+                <table>
+                  <thead>
+                    <tr><th>Edição</th><th>Entregues</th><th>Abertura</th><th>Clique</th><th>Descad.</th><th>Reclam.</th></tr>
+                  </thead>
+                  <tbody>
+                    {data.snapshot.editions.map((edition) => (
+                      <tr>
+                        <td class="slug" title={edition.slug}>{edition.slug}</td>
+                        <td>{int.format(edition.delivered)}</td>
+                        <td>{pct(rate(edition.opened, edition.delivered))}</td>
+                        <td>{pct(rate(edition.clicked, edition.delivered))}</td>
+                        <td>{int.format(edition.unsubscribed)}</td>
+                        <td>{int.format(edition.complained)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          )}
+
+          <ul class="notes">
+            <li>Inscrições vêm do Resend (data de criação do contato); reinscrições e descadastros pela página são contados a partir da ativação do painel.</li>
+            <li>Churn = descadastros do período ÷ ativos no início do período. Conversão considera só os dias com visitas medidas.</li>
+            <li>Abertura é inflada pelo Apple Mail Privacy Protection — prefira o clique.</li>
+          </ul>
+        </>
+      )}
+    </div>
+
+    <script is:inline>
+      (function () {
+        var charts = document.querySelectorAll('[data-chart]');
+        charts.forEach(function (svg) {
+          var readout = svg.parentElement.querySelector('[data-readout]');
+          var current = null;
+          function show(hit) {
+            if (current) current.classList.remove('on');
+            current = hit;
+            hit.classList.add('on');
+            var r = JSON.parse(hit.getAttribute('data-row'));
+            readout.innerHTML = '';
+            var day = document.createElement('strong');
+            day.textContent = r.d;
+            readout.appendChild(day);
+            readout.appendChild(document.createElement('br'));
+            readout.appendChild(
+              document.createTextNode(
+                r.s + ' inscrições' + (r.r ? ' (+' + r.r + ' reinscr.)' : '') + ' · ' + r.u + ' descad. · ' + r.v + ' visitas · conversão ' + r.c,
+              ),
+            );
+          }
+          svg.addEventListener('pointerdown', function (event) {
+            if (event.target.classList && event.target.classList.contains('hit')) show(event.target);
+          });
+          svg.addEventListener('pointermove', function (event) {
+            if (event.pointerType === 'mouse' && event.target.classList && event.target.classList.contains('hit')) show(event.target);
+          });
+        });
+      })();
+    </script>
+  </body>
+</html>

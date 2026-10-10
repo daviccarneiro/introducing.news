@@ -3,6 +3,7 @@ export const prerender = false;
 import type { APIRoute } from 'astro';
 import { RESEND_API_KEY } from 'astro:env/server';
 import { clientIp, isRateLimited, json, verifyTurnstile } from '../../lib/api';
+import { bumpDay } from '../../lib/metrics';
 
 const RATE_LIMIT = { scope: 'unsubscribe', max: 5, windowSeconds: 600 };
 
@@ -62,7 +63,7 @@ export const POST: APIRoute = async ({ request }) => {
     return json({ error: 'Não foi possível concluir. Tente de novo.' }, 502);
   }
 
-  const contact = (await found.json()) as { id?: string };
+  const contact = (await found.json()) as { id?: string; unsubscribed?: boolean };
   if (!contact.id) {
     return json({ ok: true }, 200);
   }
@@ -81,6 +82,9 @@ export const POST: APIRoute = async ({ request }) => {
     console.error('unsubscribe: falha no Resend', response.status, await response.text());
     return json({ error: 'Não foi possível concluir. Tente de novo.' }, 502);
   }
+
+  // Contador do painel (churn por dia); quem já tinha saído não conta de novo.
+  if (!contact.unsubscribed) await bumpDay({ unsubscribes: 1 });
 
   return json({ ok: true }, 200);
 };
