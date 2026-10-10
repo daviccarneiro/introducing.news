@@ -48,14 +48,49 @@ jobs:
       - name: Publicar edições programadas
         run: node scripts/publish-batch.mjs
       - name: Commit e push
+        id: commit
         run: |
           if git diff --quiet; then
             echo "Nada mudou."
             exit 0
           fi
+          # Edições que acabaram de virar `published` (só o status muda no batch).
+          slugs=$(git diff --name-only -- src/content/posts | sed -n 's#^src/content/posts/\(.*\)\.mdx$#\1#p' | tr '\n' ' ')
+          echo "slugs=${slugs% }" >> "$GITHUB_OUTPUT"
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/content/posts
           git commit -m "chore(content): publicar edições do batch"
           git push
           # O push na main dispara o build/deploy da Netlify (Git integration).
+      - name: Aguardar a edição no ar
+        # O e-mail só sai depois que a página existe: sem isso, quem clica cedo cai num 404.
+        if: steps.commit.outputs.slugs != ''
+        env:
+          SLUGS: ${{ steps.commit.outputs.slugs }}
+        run: |
+          for slug in $SLUGS; do
+            url="https://introducing.news/arquivo/$slug/"
+            for attempt in $(seq 1 60); do
+              code=$(curl -s -o /dev/null -w '%{http_code}' "$url")
+              if [ "$code" = "200" ]; then
+                echo "✔ $url no ar."
+                continue 2
+              fi
+              sleep 15
+            done
+            echo "✖ $url não ficou no ar em 15 minutos: e-mail não enviado." >&2
+            exit 1
+          done
+      - name: Enviar a newsletter
+        # Um Broadcast por edição publicada; o nome `edição-<slug>` impede envio duplicado.
+        if: steps.commit.outputs.slugs != ''
+        env:
+          SLUGS: ${{ steps.commit.outputs.slugs }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_SEGMENT_ID: ${{ secrets.RESEND_SEGMENT_ID }}
+          SITE_URL: https://introducing.news
+        run: |
+          for slug in $SLUGS; do
+            node scripts/send-newsletter.mjs "$slug"
+          done

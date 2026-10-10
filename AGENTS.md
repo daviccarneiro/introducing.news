@@ -120,7 +120,7 @@ Nunca commite valores. O repositório é público.
 - `signature` define **quem assina o e-mail** que anuncia a edição — pode ser diferente de quem escreveu o conteúdo. O e-mail usa nome + cargo + foto (ou iniciais) do autor. Obrigatório no CMS; o envio recusa edição sem assinatura.
 - **Status editorial**: `draft` (rascunho) → `review` (em revisão) → `scheduled` (programada) → `published` (publicada). **Só `published` aparece no site, no RSS e no envio.**
 - Em "Programada", `publishedAt` é a data do batch; a data é normalizada para o próximo dia de batch (uma edição marcada para quarta é publicada na segunda seguinte).
-- **Batch**: o workflow **Publicar batch** (`.github/workflows/publish.yml`) é acionado por mudanças em `src/content/posts/**` (o commit do Keystatic ao programar) e por cron nas segundas às 07:45 BRT. Antes de tudo, um job de triagem roda `scripts/publish-batch.mjs --check` (sem dependências externas): se não houver edição `scheduled`, vencida e com `title`/`description`/`signature`/`publishedAt`, **nada mais roda** — sem `npm ci`, sem commit, sem deploy. Quando há, o script troca `scheduled` → `published`, commita e aciona o Deploy.
+- **Batch**: o workflow **Publicar batch** (`.github/workflows/publish.yml`) é acionado por mudanças em `src/content/posts/**` (o commit do Keystatic ao programar) e por cron nas segundas às 07:45 BRT. Antes de tudo, um job de triagem roda `scripts/publish-batch.mjs --check` (sem dependências externas): se não houver edição `scheduled`, vencida e com `title`/`description`/`signature`/`publishedAt`, **nada mais roda** — sem `npm ci`, sem commit, sem deploy. Quando há, o script troca `scheduled` → `published`, commita e aciona o Deploy; o mesmo job espera a página da edição responder 200 no site (até 15 min) e **envia a newsletter** de cada edição publicada (ver "Newsletter"). Programar no CMS é a única ação humana: publicação e e-mail saem juntos na segunda.
 - Imagem de capa preenchida sobrepõe a figura abstrata em todos os lugares (card, destaque, post).
 - Todo o texto da interface vive em `src/copy.ts` (funções `t()` e `categoryLabel()`).
 
@@ -148,7 +148,8 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 - `scripts/send-newsletter.mjs <slug> [--dry-run]`: monta o e-mail a partir do frontmatter (assinatura via `signature`) e cria um Broadcast com `send: true`. Só edições com `status: published` podem ser enviadas. Anti-duplicidade pelo nome `edição-<slug>`.
 - Assunto e kicker trazem a **data da edição** (`publishedAt`, ex.: "5 de outubro de 2026"); o assunto é `#N - assunto` (número da edição + assunto da coleção E-mails, com fallback no título).
 - O rodapé aponta "cancelar inscrição" para `/descadastrar` (ver "Descadastro").
-- Workflow **Newsletter** (Actions → Run workflow, input `slug`) roda o script. O slug é validado (`^[a-z0-9-]+$`) e passado por env (nunca interpolado direto em `run:`).
+- **Envio automático**: o workflow **Publicar batch** envia o e-mail de cada edição que ele publica, logo depois que a página entra no ar (segunda, a partir das 07:45 BRT; o cron do GitHub pode atrasar alguns minutos). Se a página não subir em 15 min, o e-mail não sai e o job falha (o GitHub avisa por e-mail).
+- Workflow **Newsletter** (Actions → Run workflow, input `slug`) roda o script manualmente: use só para reenviar após uma falha (a anti-duplicidade impede segundo envio da mesma edição). O slug é validado (`^[a-z0-9-]+$`) e passado por env (nunca interpolado direto em `run:`).
 - Remetente: `introducing.news <oi@introducing.news>`. Unsubscribe gerenciado pelo Resend. Respostas caem em `oi@introducing.news` e são encaminhadas via Cloudflare Email Routing (ver "Deploy").
 
 ### Analytics
@@ -174,7 +175,7 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 ### Deploy
 
 - Push na `main` → **Netlify Git integration**: build (`npm run build`) + deploy automáticos. Projeto `introducing-news` (site id `01f3f0c5-38b4-42da-8f75-bdf5fdbd5bb8`).
-- Workflow **Publicar batch**: acionado por commits em `src/content/posts/**` e por cron (toda segunda, 07:45 BRT); só age quando há edição programada, vencida e completa (ver "Conteúdo"). O push na `main` dispara o build da Netlify.
+- Workflow **Publicar batch**: acionado por commits em `src/content/posts/**` e por cron (toda segunda, 07:45 BRT); só age quando há edição programada, vencida e completa (ver "Conteúdo"). O push na `main` dispara o build da Netlify; quando a página está no ar, o mesmo job envia a newsletter.
 - Workflow **Analytics**: cron semanal (segundas, 08:30 BRT) + dispatch manual; sem `GOOGLE_SHEET_ID`/`GOOGLE_SERVICE_ACCOUNT_JSON` configurados, encerra com aviso sem falhar.
 - O site é servido por uma **SSR Function** (rotas de API e Keystatic) e uma **Middleware Edge Function** (redirects de `/pt` e `/en`).
 - **DNS (Cloudflare, cinza/DNS-only — fora do repo)**: apex `introducing.news` → A `75.2.60.5` (load balancer da Netlify; **sem AAAA** — o LB não tem IPv6); `www` e `cms` → CNAME `introducing-news.netlify.app`; `staging` → CNAME `introducing-news-staging.netlify.app`. O domínio é registrado na Cloudflare Registrar (a zona **não** pode ser apagada nem usar nameservers externos). A Cloudflare guarda **apenas o DNS, o Turnstile e o Email Routing** deste projeto — os Workers e as regras de zona foram removidos.
