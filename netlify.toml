@@ -12,6 +12,15 @@
   status = 301
   force = true
 
+# Subdomínio padrão da Netlify → apex (301). O Turnstile só aceita os domínios
+# próprios: sem isso, o formulário quebra em introducing-news.netlify.app (erro
+# 110200 no Sentry). Deploy previews (<hash>--introducing-news) não casam aqui.
+[[redirects]]
+  from = "https://introducing-news.netlify.app/*"
+  to = "https://introducing.news/:splat"
+  status = 301
+  force = true
+
 # cms → /keystatic (302), como o redirect equivalente da Cloudflare.
 [[redirects]]
   from = "https://cms.introducing.news/*"
