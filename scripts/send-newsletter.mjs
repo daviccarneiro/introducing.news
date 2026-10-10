@@ -114,7 +114,10 @@ try {
 }
 
 const { data } = parseFrontmatter(raw);
-if (data.status !== 'published') {
+// O preview serve justamente para revisar antes de publicar: aceita qualquer status.
+if (showPreview && data.status !== 'published') {
+  console.warn(`⚠ Status "${data.status ?? 'draft'}" — gerando só o preview (o envio exige "published").`);
+} else if (data.status !== 'published') {
   console.error(`✖ Status "${data.status ?? 'draft'}" — só edições publicadas podem ser enviadas.`);
   process.exit(1);
 }

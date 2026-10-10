@@ -9,8 +9,8 @@ const postSchema = {
   title: fields.slug({ name: { label: 'Título' } }),
   number: fields.integer({
     label: 'Número da edição',
-    description: 'Usado no assunto do e-mail (#N) e exibido na página.',
-    validation: { isRequired: true, min: 1 },
+    description: 'Usado no assunto do e-mail (#N) e exibido na página. A #0 é a introdução; as edições semanais começam na #1.',
+    validation: { isRequired: true, min: 0 },
   }),
   description: fields.text({
     label: 'Resumo',
@@ -53,7 +53,12 @@ const postSchema = {
     ],
     defaultValue: 'draft',
   }),
-  content: fields.mdx({ label: 'Conteúdo' }),
+  content: fields.mdx({
+    label: 'Conteúdo',
+    options: {
+      image: { directory: 'public/images/posts', publicPath: '/images/posts/' },
+    },
+  }),
 };
 
 const authorSchema = {

@@ -163,6 +163,37 @@ input {
   margin-block: 2em;
 }
 
+/* Tabelas do MDX: rolam na horizontal no celular em vez de vazar a coluna. */
+.prose table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin-block: 0 1.25em;
+  font: 400 14px/1.5 var(--font-sans);
+}
+
+.prose th,
+.prose td {
+  padding: var(--space-2) var(--space-3);
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.prose th {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.prose td {
+  min-width: 5em;
+}
+
+.prose img {
+  margin-block: 1.5em;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;

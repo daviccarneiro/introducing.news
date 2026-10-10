@@ -113,7 +113,7 @@ Nunca commite valores. O repositório é público.
 
 ### Conteúdo
 
-- `src/content/posts/*.mdx`; schema em `src/content.config.ts`; no CMS, coleção `posts` ("Edições").
+- `src/content/posts/*.mdx`; schema em `src/content.config.ts`; no CMS, coleção `posts` ("Edições"). Imagens do corpo (upload no CMS ou gráficos SVG) ficam em `public/images/posts/<slug>/`. Pesquisa, voz e estrutura das edições: `EDITORIAL.md`.
 - Campos: `title`, `number` (número da edição), `description`, `publishedAt`, `cover` (fig-01..03), `coverImage` (upload opcional → `public/images/covers/`), `signature` (relação com Autores), `status`.
 - `src/content/authors/*.json`: nome, cargo/linha de assinatura e foto (upload → `public/images/authors/`). No CMS, coleção "Autores".
 - `src/content/emails/*.mdx`: e-mail da newsletter (versão reduzida), ligado a uma edição pelo campo `edition`; conteúdo em MDX (negrito, listas, links, imagens → upload em `public/images/emails/`). No CMS, coleção "E-mails".
@@ -144,7 +144,7 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 - **O que editar onde**: o conteúdo do e-mail vem da coleção **E-mails** (associada à edição por `edition`), em MDX; `scripts/email-body.mjs` converte para HTML de e-mail (estilos inline, imagens em URL absoluta). Assunto e preheader vêm do e-mail, com fallback para `title`/`description` da edição. Sem entrada na coleção, o envio usa a versão automática (título + resumo + CTA). O layout geral vive em `scripts/email-template.mjs`.
 - `npm run template:sync` espelha esse HTML como template publicado no Resend (preview/teste no painel). O envio **não** depende do painel: usa o HTML do repositório.
 - **Boas-vindas**: quem se inscreve recebe um e-mail 5 minutos depois, uma única vez. O texto vive em `scripts/welcome-email.mjs` (mesmo layout do e-mail da edição) e `npm run welcome:sync` publica o template `introducing-news-boas-vindas` e garante o evento `newsletter.subscribed` e a automação no Resend (evento → 5 min → envio). O site dispara o evento em `POST /api/subscribe` **apenas quando o contato é criado**; reinscrições (PATCH) não reenviam e contatos descadastrados são ignorados pelo Resend. O CTA do e-mail aponta para `/ultima` (302 → edição mais recente) e o "cancelar inscrição" para `/descadastrar` — nunca use `{{{RESEND_UNSUBSCRIBE_URL}}}` como valor de variável (a substituição não é aninhada e o link fica quebrado).
-- Para ver o e-mail real antes de enviar: `node scripts/send-newsletter.mjs <slug> --preview` grava o HTML no diretório temporário (sem enviar); o painel do Resend mostra o layout com os valores de fallback das variáveis.
+- Para ver o e-mail real antes de enviar: `node scripts/send-newsletter.mjs <slug> --preview` grava o HTML no diretório temporário (sem enviar; aceita edição em rascunho); o painel do Resend mostra o layout com os valores de fallback das variáveis.
 - `scripts/send-newsletter.mjs <slug> [--dry-run]`: monta o e-mail a partir do frontmatter (assinatura via `signature`) e cria um Broadcast com `send: true`. Só edições com `status: published` podem ser enviadas. Anti-duplicidade pelo nome `edição-<slug>`.
 - Assunto e kicker trazem a **data da edição** (`publishedAt`, ex.: "5 de outubro de 2026"); o assunto é `#N - assunto` (número da edição + assunto da coleção E-mails, com fallback no título).
 - O rodapé aponta "cancelar inscrição" para `/descadastrar` (ver "Descadastro").
@@ -234,6 +234,7 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 
 - Pendências e melhorias: [issues do repositório](https://github.com/daviccarneiro/introducing.news/issues).
 - Figma: arquivo "introducing.news — Design" (Fundações/Componentes/Telas; tokens espelhados no CSS).
+- Pesquisa, voz e estrutura das edições (pessoas e agentes de IA): `EDITORIAL.md`.
 - Marca e estilo para pessoas e agentes de IA: `DESIGN.md` (voz, cores, tipografia, imagens, prompts). Assets prontos: `public/brand/` (logo, ícone, capas), tokens legíveis por máquina em `design/tokens.json` e fontes OFL em `design/fonts/`.
 - Painéis: Resend (Domains/Contacts/Segments/Broadcasts), Netlify (projeto `introducing-news`), Cloudflare (DNS da zona + Turnstile), Doppler (projeto `introducing-news`), Sentry (erros do site), Google Tag Manager (contêiner `GTM-TFKQKWHD`), Microsoft Clarity (heatmap do site) e Looker Studio (relatório do Sheet de analytics).
 - Rotas de API: `POST /api/subscribe` (inscrição), `POST /api/unsubscribe` (descadastro), `POST /api/hit` (contador de visitas), `/painel` (métricas, privado), `/api/keystatic/*` (CMS), `/keystatic` (admin).
