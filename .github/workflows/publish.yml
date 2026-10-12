@@ -10,6 +10,12 @@ on:
   schedule:
     # Segundas, 07:45 America/Sao_Paulo (UTC-3, sem horário de verão).
     - cron: '45 10 * * 1'
+    # Reservas: o GitHub às vezes descarta disparos agendados (aconteceu em
+    # 12/10/2026). Depois que a edição sai, a triagem não acha mais nada
+    # programado e estes disparos terminam sem publicar nem enviar de novo.
+    - cron: '15 11 * * 1'
+    - cron: '0 12 * * 1'
+    - cron: '0 13 * * 1'
   workflow_dispatch:
 
 permissions:
