@@ -1,0 +1,9 @@
+{
+  "headline": ["A IA saiu", "do [chat]"],
+  "refs": [
+    { "logo": "claude", "label": "Claude Dashboards" },
+    { "logo": "openai", "label": "GPT-6 no ChatGPT" },
+    { "logo": "gemini", "label": "Gemini no Gmail e no Docs" },
+    { "text": "Jev", "label": "Jev" }
+  ]
+}
