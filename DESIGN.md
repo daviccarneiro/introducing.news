@@ -168,6 +168,17 @@ As imagens da marca são **abstratas e geométricas**, nunca fotográficas. Elas
 
 **Não use** imagens geradas para simular capturas de tela, pessoas reais ou marcas.
 
+### 7.1 Capa da edição semanal (gerador)
+
+Cada edição semanal ganha uma capa própria que mostra **do que ela fala**, montada por `scripts/cover.mjs` (sem IA generativa de imagem). É a exceção às regras acima: aqui entram logotipos reais, uma foto com licença livre e um título curto.
+
+- **Composição** (fixa no script): fundo `#0B0B0C` com a grade da `fig-01`; à esquerda, rótulo mono ("EDIÇÃO #N · DATA"), título em Source Serif 600 com **um** trecho em marca-texto laranja (a faixa de `highlight.svg`, texto preto sobre o laranja) e o logo da marca embaixo; à direita, uma **órbita laranja** com a referência principal no centro e até três referências orbitando.
+- **Referências** (2 a 4): logotipos das empresas e produtos da semana, sempre em branco sobre círculos `ink-900` (os pacotes `@lobehub/icons-static-svg` e `simple-icons` cobrem as marcas de IA e os apps comuns; `npm run cover -- --find <termo>` procura); um nome curto em Geist quando a marca não tem logotipo (ex.: "Jev"); e, no máximo, **uma foto** de pessoa ligada à notícia (ex.: o CEO da empresa), em preto e branco, recortada em círculo.
+- **Foto**: só de arquivo real com licença livre (CC0, domínio público, CC BY ou CC BY-SA, via Wikimedia Commons). O script confere a licença, baixa e escreve o crédito no canto da imagem; o mesmo crédito entra nas Fontes da edição. **Nunca** gere rosto de pessoa real com IA nem use foto sem licença.
+- **Texto**: até 3 linhas e 40 caracteres, só o fio condutor ou o nome do destaque ("A IA saiu do [chat]"). O resto da história fica no título da página.
+- **Cores**: só a paleta da marca. Logotipos coloridos (`-color`) são recusados pelo script.
+- **Arquivos**: especificação em `design/covers/<slug>.json` (+ a foto baixada, se houver) e saída em `public/images/covers/<slug>/coverImage.png` (2400×1350, o mesmo caminho do upload no Keystatic), usada no site, nos cards e como imagem de compartilhamento.
+
 ## 8. Componentes do site
 
 No Figma: página **Componentes** → `Biblioteca de Componentes` (primitivas: ícones, grafismos, Button, Input, Consentimento, Avatar) e `Biblioteca B — Site` (componentes compostos). No código, cada componente Astro vive em `src/components/` e as views em `src/views/`.
@@ -220,8 +231,8 @@ No Figma: página **Componentes** → `Biblioteca de Componentes` (primitivas: �
 
 - Não use cores, fontes ou raios fora deste guia.
 - Não use o laranja em mais de 1–2 elementos por tela; nunca como fundo de grandes áreas (exceto o logo).
-- Não escreva texto dentro de imagens geradas; a tipografia é sempre aplicada em HTML/Figma.
-- Não use fotos de pessoas ou clichês de IA nas capas; a marca é abstrata.
+- Não escreva texto dentro de imagens geradas; a tipografia é sempre aplicada em HTML/Figma (a capa da edição, montada por `scripts/cover.mjs`, é a exceção; ver 7.1).
+- Não use clichês de IA nas capas. Pessoas só como foto real com licença livre na capa da edição (7.1), nunca geradas por IA.
 - Não altere o logotipo (cores, proporções, tipografia) nem o use sem a estrela no lockup horizontal.
 - Não reintroduza elementos de versões antigas do design (badges/tags nas capas, "rabiscos" estilo Notion, selo "IA", LinkedIn no rodapé): o site atual não os usa.
 - Este repositório é público: nunca coloque segredos, tokens ou dados de assinantes em assets, exemplos ou prompts.

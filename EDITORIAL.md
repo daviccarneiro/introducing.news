@@ -76,7 +76,7 @@ Coleção **Edições** (`src/content/posts/<slug>.mdx`). Ordem que funcionou:
 
 Não use seções separadas por profissão: o leitor de qualquer área precisa encontrar exemplos para si ao longo de todo o texto.
 
-Frontmatter: `number` é a última edição + 1 (a #0 é a introdução do projeto; as semanais começam na #1); `title` com o fio condutor + os nomes principais; `description` em uma frase que liste os destaques (ela aparece no card, no RSS e no topo do e-mail); `publishedAt` na segunda do envio; `status: draft` até a revisão.
+Frontmatter: `number` é a última edição + 1 (a #0 é a introdução do projeto; as semanais começam na #1); `title` com o fio condutor + os nomes principais; `description` em uma frase que liste os destaques (ela aparece no card, no RSS e no topo do e-mail); `publishedAt` na segunda do envio; `cover` com uma figura de reserva (`fig-01/02/03`); `coverImage` com a capa da edição (seção 6.1); `status: draft` até a revisão.
 
 **Tamanho**: a página pode ser longa (15 a 20 minutos de leitura) desde que cada seção se sustente sozinha; quem quer o resumo tem o "Em 30 segundos" e o e-mail.
 
@@ -142,7 +142,17 @@ Glossário de referência:
   - textos com 13px ou mais (no celular o SVG encolhe para ~57%); confira se nada encosta ou vaza renderizando o SVG antes de publicar.
 - **Acessibilidade**: `<title>` e `<desc>` no SVG; texto alternativo no MDX descrevendo o que o gráfico mostra **com os números principais**; logo depois do gráfico, uma tabela com os mesmos dados.
 - **Tabelas**: markdown simples; no site elas rolam na horizontal no celular. Embaixo, uma linha em itálico com a fonte (`*Fonte: ...*`).
-- **Imagens geradas por IA**: só na linha do `DESIGN.md` (abstratas, sem texto, sem pessoas). Capa: use `fig-01/02/03` se não houver imagem própria.
+- **Imagens geradas por IA**: só na linha do `DESIGN.md` (abstratas, sem texto, sem pessoas). A capa da edição não é gerada por IA: ela é montada pelo script da seção 6.1.
+
+### 6.1 Capa da edição
+
+Toda edição semanal sai com uma capa própria, que mostra de relance do que ela fala (regras visuais em `DESIGN.md`, seção 7.1). A capa aparece no topo da página, nos cards e quando alguém compartilha o link.
+
+1. **Escolha as referências** (2 a 4) pelos destaques do "Em 30 segundos", na ordem de importância: a primeira fica no centro. Use logotipos das empresas e produtos citados (`npm run cover -- --find <termo>`; prefira o logotipo do produto, como `claude` ou `gemini`, ao da empresa quando o destaque é o produto) e, para o que não tem logotipo, um nome curto (`{ "text": "Jev" }`).
+2. **Pessoa, se ajudar**: quando o destaque tem um rosto conhecido (ex.: notícia da OpenAI → Sam Altman), a referência central pode ser uma foto do Wikimedia Commons com licença livre: `{ "photo": { "commons": "File:<nome do arquivo>" } }`. Procure o arquivo na API do Commons (`list=search`, `srnamespace=6`) e prefira as versões "(cropped)", com o rosto em destaque. O script recusa licenças não livres; se a foto não der certo, siga só com logotipos. A pessoa é opcional: logotipos já bastam.
+3. **Título curto**: 1 a 3 linhas, até 40 caracteres, com o fio condutor ou o destaque principal e **um** trecho entre colchetes para o marca-texto (ex.: `["A IA saiu", "do [chat]"]`). Sem exclamação, sem travessão.
+4. **Gere e confira**: grave `design/covers/<slug>.json` e rode `npm run cover -- <slug> --apply` (gera `public/images/covers/<slug>/coverImage.png` e preenche `coverImage` no frontmatter). Abra o PNG e confira se os logotipos são os certos e se nada encosta.
+5. **Crédito**: com foto, o script mostra o crédito (autor, licença, Commons); ele já vai no canto da imagem e também entra nas **Fontes** da edição, com o link do arquivo (`source` na especificação).
 
 ## 7. Checklist antes de mudar para "Programada"
 
@@ -155,10 +165,11 @@ Glossário de referência:
 - [ ] Recomendação com motivos concretos e com o cuidado de privacidade.
 - [ ] Sem exclamação, sem travessão, sem jargão sem explicação (`grep -nE '—|!([^[]|$)' src/content/posts/<slug>.mdx`).
 - [ ] Gráficos conferidos no desktop e no celular; texto alternativo e tabela presentes.
+- [ ] Capa gerada (`npm run cover -- <slug> --apply`) com as referências certas da semana; crédito da foto nas Fontes, se houver foto.
 - [ ] E-mail na coleção **E-mails** ligado à edição; assunto e preheader revisados; preview gerado com `--preview`.
 - [ ] `npm run check` sem erros.
 - [ ] Nenhum dado pessoal de assinante ou segredo no texto (o repositório é público).
 
 ## 8. Prompt para gerar a próxima edição (agentes)
 
-> Leia `AGENTS.md`, `DESIGN.md` e `EDITORIAL.md`. Pesquise as notícias de tecnologia e IA de <data inicial> a <data final> seguindo a seção 2, priorizando funcionalidades que pessoas de qualquer área possam usar (pauta fixa + estes pedidos: <pedidos do mantenedor>). Monte a edição na coleção Edições com `status: draft` e `publishedAt: <segunda>`, seguindo a estrutura da seção 3, e o e-mail na coleção E-mails seguindo a seção 4. Recomendação da semana: <ferramenta e motivos do mantenedor>. Crie gráficos conforme a seção 6 quando houver comparativo. Rode o checklist da seção 7, gere o preview do e-mail e mostre a página renderizada antes de qualquer commit.
+> Leia `AGENTS.md`, `DESIGN.md` e `EDITORIAL.md`. Pesquise as notícias de tecnologia e IA de <data inicial> a <data final> seguindo a seção 2, priorizando funcionalidades que pessoas de qualquer área possam usar (pauta fixa + estes pedidos: <pedidos do mantenedor>). Monte a edição na coleção Edições com `status: draft` e `publishedAt: <segunda>`, seguindo a estrutura da seção 3, e o e-mail na coleção E-mails seguindo a seção 4. Recomendação da semana: <ferramenta e motivos do mantenedor>. Crie gráficos conforme a seção 6 quando houver comparativo e a capa conforme a seção 6.1. Rode o checklist da seção 7, gere o preview do e-mail e mostre a página renderizada antes de qualquer commit.

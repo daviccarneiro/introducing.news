@@ -59,6 +59,8 @@ scripts/resend-welcome.mjs # publica template + evento + automação de boas-vin
 scripts/send-newsletter.mjs# disparo de Broadcast
 scripts/resend-template.mjs# publica o template do e-mail no Resend
 scripts/publish-batch.mjs  # publica edições programadas vencidas (batch)
+scripts/cover.mjs          # capa da edição (logotipos/foto + título com marca-texto → PNG)
+design/covers/<slug>.json  # especificação da capa de cada edição (+ foto baixada do Commons)
 scripts/analytics-snapshot.mjs # métricas do Resend → Google Sheets (Looker)
 scripts/google-sheets.mjs  # cliente mínimo do Sheets (service account/JWT)
 public/_headers            # headers de segurança (CSP, HSTS, nosniff…)
@@ -79,6 +81,7 @@ netlify.toml               # build + redirects (www→apex 301, cms→/keystatic
 | `npm run template:sync` | publica/atualiza o template do e-mail no Resend (fonte: `scripts/email-template.mjs`) |
 | `npm run welcome:sync` | publica/atualiza template, evento e automação de boas-vindas no Resend |
 | `npm run publish:batch` | publica edições programadas vencidas e prontas (`--dry-run` simula; `--check` só informa) |
+| `npm run cover -- <slug> [--apply]` | gera a capa da edição a partir de `design/covers/<slug>.json` (`--apply` grava `coverImage` no frontmatter); `npm run cover -- --find <termo>` procura logotipos |
 | `npm run analytics:sync` | grava o snapshot de métricas (Resend → Google Sheets); `--dry-run` gera CSVs no temporário sem tocar no Google |
 
 Com segredos: `doppler run -p introducing-news -c dev_personal -- <comando>` (o `doppler.yaml` do repo já aponta para lá; nunca dependa do perfil global).
@@ -121,7 +124,8 @@ Nunca commite valores. O repositório é público.
 - **Status editorial**: `draft` (rascunho) → `review` (em revisão) → `scheduled` (programada) → `published` (publicada). **Só `published` aparece no site, no RSS e no envio.**
 - Em "Programada", `publishedAt` é a data do batch; a data é normalizada para o próximo dia de batch (uma edição marcada para quarta é publicada na segunda seguinte).
 - **Batch**: o workflow **Publicar batch** (`.github/workflows/publish.yml`) é acionado por mudanças em `src/content/posts/**` (o commit do Keystatic ao programar) e por cron nas segundas às 07:45 BRT. Antes de tudo, um job de triagem roda `scripts/publish-batch.mjs --check` (sem dependências externas): se não houver edição `scheduled`, vencida e com `title`/`description`/`signature`/`publishedAt`, **nada mais roda** — sem `npm ci`, sem commit, sem deploy. Quando há, o script troca `scheduled` → `published`, commita e aciona o Deploy; o mesmo job espera a página da edição responder 200 no site (até 15 min) e **envia a newsletter** de cada edição publicada (ver "Newsletter"). Programar no CMS é a única ação humana: publicação e e-mail saem juntos na segunda.
-- Imagem de capa preenchida sobrepõe a figura abstrata em todos os lugares (card, destaque, post).
+- Imagem de capa preenchida sobrepõe a figura abstrata em todos os lugares (card, destaque, post) e vira a imagem de compartilhamento (OG).
+- **Capa da edição**: a rotina de rascunho de domingo gera a capa junto com o rascunho, com `scripts/cover.mjs` (sem IA de imagem): 2 a 4 referências da semana (logotipos de `@lobehub/icons-static-svg`/`simple-icons`, um nome curto ou uma foto com licença livre do Wikimedia Commons) numa órbita laranja + título curto com marca-texto, nas fontes de `design/fonts/`. Saída em `public/images/covers/<slug>/coverImage.png` (caminho do upload do Keystatic, então dá para trocar a imagem pelo CMS). Regras visuais em `DESIGN.md` 7.1; passo a passo em `EDITORIAL.md` 6.1. Foto exige crédito nas Fontes (o script o imprime e também o desenha na imagem).
 - Todo o texto da interface vive em `src/copy.ts` (funções `t()` e `categoryLabel()`).
 
 ### Inscrição (`POST /api/subscribe`)
