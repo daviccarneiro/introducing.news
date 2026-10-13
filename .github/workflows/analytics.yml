@@ -2,8 +2,8 @@ name: Analytics
 
 on:
   schedule:
-    # Segundas, 08:30 America/Sao_Paulo (UTC-3), depois do batch (07:45).
-    - cron: '30 11 * * 1'
+    # Segundas, 13:30 America/Sao_Paulo (UTC-3), depois do batch (12:00).
+    - cron: '30 16 * * 1'
   workflow_dispatch:
 
 permissions:

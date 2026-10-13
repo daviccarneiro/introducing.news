@@ -15,7 +15,8 @@
     "welcome:sync": "node scripts/resend-welcome.mjs",
     "publish:batch": "node scripts/publish-batch.mjs",
     "analytics:sync": "node scripts/analytics-snapshot.mjs",
-    "cover": "node scripts/cover.mjs"
+    "cover": "node scripts/cover.mjs",
+    "reading-time": "node scripts/reading-time.mjs"
   },
   "dependencies": {
     "@astrojs/mdx": "^8.0.3",

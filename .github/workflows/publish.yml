@@ -8,14 +8,15 @@ on:
     paths:
       - 'src/content/posts/**'
   schedule:
-    # Segundas, 07:45 America/Sao_Paulo (UTC-3, sem horário de verão).
-    - cron: '45 10 * * 1'
-    # Reservas: o GitHub às vezes descarta disparos agendados (aconteceu em
-    # 12/10/2026). Depois que a edição sai, a triagem não acha mais nada
-    # programado e estes disparos terminam sem publicar nem enviar de novo.
-    - cron: '15 11 * * 1'
-    - cron: '0 12 * * 1'
-    - cron: '0 13 * * 1'
+    # Segundas, 12:00 America/Sao_Paulo (UTC-3, sem horário de verão).
+    - cron: '0 15 * * 1'
+    # Reservas (12:30, 13:15 e 14:15): o GitHub às vezes descarta disparos
+    # agendados (aconteceu em 12/10/2026). Depois que a edição sai, a triagem
+    # não acha mais nada programado e estes disparos terminam sem publicar
+    # nem enviar de novo.
+    - cron: '30 15 * * 1'
+    - cron: '15 16 * * 1'
+    - cron: '15 17 * * 1'
   workflow_dispatch:
 
 permissions:

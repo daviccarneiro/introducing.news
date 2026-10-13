@@ -51,6 +51,8 @@ export const welcomeVariables = {
   TAGLINE,
   DATE: 'Boas-vindas',
   TITLE: 'Que bom ter você aqui',
+  // Boas-vindas não tem capa: o espaço entre o título e o resumo fica vazio.
+  COVER: '',
   DESCRIPTION: 'Obrigado por assinar. Antes da próxima edição, um pouco sobre por que a introducing.news existe.',
   BODY: letterHtml,
   CTA_LABEL: 'Ler a última edição',

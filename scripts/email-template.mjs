@@ -61,6 +61,7 @@ export const templateHtml = `<!doctype html>
 <p style="margin:8px 0 28px 0;font-family:${SANS};font-size:13px;line-height:1.5;color:#9A9AA4;">{{{TAGLINE}}}</p>
 <p style="margin:0 0 12px 0;font-family:${MONO};font-size:11px;font-weight:500;line-height:1.4;letter-spacing:0.08em;text-transform:uppercase;color:#A63E0A;">{{{DATE}}}</p>
 <h1 style="margin:0 0 16px 0;font-family:${SERIF};font-size:27px;font-weight:600;line-height:1.22;letter-spacing:-0.015em;color:#0B0B0C;">{{{TITLE}}}</h1>
+{{{COVER}}}
 <p style="margin:0 0 28px 0;font-family:${SERIF};font-size:18px;line-height:1.65;color:#6B6B76;">{{{DESCRIPTION}}}</p>
 {{{BODY}}}
 <!--[if mso]>
@@ -120,8 +121,8 @@ const escapeHtml = (value) =>
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 
-/** Variáveis que recebem HTML já pronto (avatar, corpo do e-mail, linha de cargo, URL de descadastro). */
-const RAW_KEYS = new Set(['BODY', 'SIGNATURE_AVATAR', 'SIGNATURE_ROLE_LINE', 'UNSUBSCRIBE_URL']);
+/** Variáveis que recebem HTML já pronto (capa, avatar, corpo do e-mail, linha de cargo, URL de descadastro). */
+const RAW_KEYS = new Set(['COVER', 'BODY', 'SIGNATURE_AVATAR', 'SIGNATURE_ROLE_LINE', 'UNSUBSCRIBE_URL']);
 
 function initialsOf(name) {
   return name
@@ -138,6 +139,21 @@ export function avatarHtml(author, site) {
     return `<img src="${escapeHtml(src)}" width="40" height="40" alt="" style="display:block;width:40px;height:40px;border:0;border-radius:9999px;object-fit:cover;" />`;
   }
   return `<table role="presentation" width="40" height="40" cellpadding="0" cellspacing="0" border="0" style="width:40px;height:40px;background-color:#FFF6ED;border-radius:9999px;"><tr><td align="center" valign="middle" style="font-family:${MONO};font-size:11px;font-weight:500;letter-spacing:0.08em;color:#A63E0A;">${escapeHtml(initialsOf(author.name))}</td></tr></table>`;
+}
+
+/**
+ * Capa da edição entre o título e o resumo, com link para a edição.
+ * SVG fica de fora: clientes de e-mail não renderizam.
+ */
+export function coverHtml({ src, site, alt, href }) {
+  if (!src || /\.svg($|\?)/i.test(src)) return '';
+  const url = /^https?:\/\//.test(src) ? src : `${site}${src}`;
+  return (
+    '<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"><tr><td style="padding:0 0 20px 0;">' +
+    `<a href="${escapeHtml(href)}" style="text-decoration:none;">` +
+    `<img src="${escapeHtml(url)}" width="480" alt="${escapeHtml(alt)}" style="display:block;width:100%;max-width:480px;height:auto;border:0;border-radius:12px;outline:none;text-decoration:none;" />` +
+    '</a></td></tr></table>'
+  );
 }
 
 export function renderEmail(values) {
@@ -164,13 +180,14 @@ export function renderText(values) {
   ].join('\n');
 }
 
-/** Monta HTML e texto do e-mail de uma edição. */
-export function buildEmail({ title, description, url, site, author, body = { html: '', text: '' }, date = '' }) {
+/** Monta HTML e texto do e-mail de uma edição (`cover`: `coverImage` do frontmatter, opcional). */
+export function buildEmail({ title, description, url, site, author, body = { html: '', text: '' }, date = '', cover = '' }) {
   const variables = {
     LANG: COPY.lang,
     TAGLINE: COPY.tagline,
     DATE: date,
     TITLE: title,
+    COVER: coverHtml({ src: cover, site, alt: title, href: url }),
     DESCRIPTION: description,
     BODY: body.html,
     BODY_TEXT: body.text,
@@ -196,6 +213,12 @@ const fallbackVariables = {
   TAGLINE: COPY.tagline,
   DATE: '5 de outubro de 2026',
   TITLE: 'Título da edição',
+  COVER: coverHtml({
+    src: '/brand/cover-fig-01.png',
+    site: 'https://introducing.news',
+    alt: 'Título da edição',
+    href: 'https://introducing.news/arquivo/',
+  }),
   DESCRIPTION: 'Resumo curto da edição, direto no e-mail.',
   BODY: [
     `<p style="margin:0 0 16px 0;font-family:${SERIF};font-size:18px;line-height:1.7;color:#0B0B0C;">Esta é a versão reduzida da edição: um TLDR com os destaques, escrito no CMS na coleção <strong>E-mails</strong>.</p>`,

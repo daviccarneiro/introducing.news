@@ -1,4 +1,5 @@
 import { getCollection, getEntry, type CollectionEntry } from 'astro:content';
+import { readingMinutes } from './reading-time.mjs';
 
 export type Post = CollectionEntry<'posts'>;
 export type Author = CollectionEntry<'authors'>;
@@ -26,8 +27,7 @@ export function initialsOf(name: string): string {
 }
 
 export function readingTime(post: Post): number {
-  const words = (post.body ?? '').trim().split(/\s+/).length;
-  return Math.max(1, Math.round(words / 200));
+  return readingMinutes(post.body);
 }
 
 export function formatDate(date: Date): string {

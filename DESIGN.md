@@ -10,7 +10,7 @@
 - **Promessa**: ficar em dia com tecnologia sem passar horas pesquisando. Sem hype, sem review patrocinado, sem ruído.
 - **Personalidade**: editorial, precisa, sóbria e direta. "Minimalismo editorial com precisão técnica."
 - **Voz**: frases curtas, em pt-BR, sem exclamações e sem jargão de marketing. Fala de igual para igual com quem trabalha com tecnologia.
-- **Cadência**: toda segunda-feira, às 07:45 (horário de Brasília).
+- **Cadência**: toda segunda-feira, ao meio-dia (12:00, horário de Brasília).
 - **Palavras-chave visuais**: grade técnica, órbitas, arcos, sinal, traço fino, muito espaço negativo, um único acento laranja.
 
 ## 2. Logotipo

@@ -82,7 +82,7 @@ No Resend, a audiência fica em um **segmento único** e cada contato recebe as 
 
 Cada edição tem um status no CMS: **Rascunho → Em revisão → Programada → Publicada**. Só "Publicada" aparece no site e no RSS.
 
-Uma edição "Programada" entra no próximo **batch**: escolha a data no campo "Data de publicação" (toda segunda) e o workflow **Publicar batch** publica no dia do batch (toda segunda, 07:45 BRT) e dispara o deploy. O workflow também é acionado quando o CMS salva uma edição, mas só executa a publicação se existir edição programada, vencida e com conteúdo completo (`title`, `description`, `signature` e data) — caso contrário, nada roda.
+Uma edição "Programada" entra no próximo **batch**: escolha a data no campo "Data de publicação" (toda segunda) e o workflow **Publicar batch** publica no dia do batch (toda segunda, 12:00 BRT) e dispara o deploy. O workflow também é acionado quando o CMS salva uma edição, mas só executa a publicação se existir edição programada, vencida e com conteúdo completo (`title`, `description`, `signature` e data) — caso contrário, nada roda.
 
 ## Enviar uma edição por e-mail
 

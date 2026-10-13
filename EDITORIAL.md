@@ -78,7 +78,11 @@ Não use seções separadas por profissão: o leitor de qualquer área precisa e
 
 Frontmatter: `number` é a última edição + 1 (a #0 é a introdução do projeto; as semanais começam na #1); `title` com o fio condutor + os nomes principais; `description` em uma frase que liste os destaques (ela aparece no card, no RSS e no topo do e-mail); `publishedAt` na segunda do envio; `cover` com uma figura de reserva (`fig-01/02/03`); `coverImage` com a capa da edição (seção 6.1); `status: draft` até a revisão.
 
-**Tamanho**: a página pode ser longa (15 a 20 minutos de leitura) desde que cada seção se sustente sozinha; quem quer o resumo tem o "Em 30 segundos" e o e-mail.
+**Tamanho**: no máximo **10 minutos de leitura**; o normal é ficar entre 8 e 10. O site conta 200 palavras por minuto sobre o corpo inteiro (tabelas e Fontes incluídas), então o teto é de cerca de 2.100 palavras. Meça com `npm run reading-time -- <slug>` (o `npm test` também barra edições acima do limite). Para caber:
+
+- **Escreva mais direto**: uma ideia por frase, sem repetir no parágrafo seguinte o que o anterior já disse, sem introduções do tipo "vale lembrar que". Corte adjetivos e exemplos redundantes: dois exemplos de áreas diferentes bastam.
+- **Escolha menos assuntos, se precisar**: corte nesta ordem até caber: o comparativo (fica só a tabela ou sai), a terceira seção de funcionalidades, o assunto que viralizou, os bullets de "Golpes, regras e responsabilidade" (no máximo 2) e as "Datas para anotar" (no máximo 3). Funcionalidades e "Minha recomendação" ficam.
+- Cada destaque cabe em 2 a 4 parágrafos curtos com o ângulo da seção 2.4. Quem quer só o resumo tem o "Em 30 segundos" e o e-mail.
 
 ## 4. Estrutura do e-mail
 
@@ -92,7 +96,7 @@ Coleção **E-mails** (`src/content/emails/<slug>.mdx`, campo `edition` apontand
 - **Assunto**: até ~55 caracteres; o envio acrescenta `#N - ` na frente. Combine gancho humano + gancho de conteúdo (ex.: "Obrigado por estar aqui (e a IA saiu do chat)").
 - **Preheader**: até ~110 caracteres, complementando o assunto (não repita).
 - **Tom**: um grau mais coloquial que a página ("pra", "tô", "logo, logo").
-- Sem imagens pesadas: gráfico fica na página. Se precisar de imagem no e-mail, use PNG (clientes de e-mail não mostram SVG).
+- Sem imagens pesadas: gráfico fica na página. A capa da edição (`coverImage`) entra sozinha no e-mail, entre o título e o resumo; não a repita no corpo. Se precisar de outra imagem no e-mail, use PNG (clientes de e-mail não mostram SVG).
 - Revise com `node scripts/send-newsletter.mjs <slug> --preview` (funciona com rascunho).
 
 ## 5. Voz e escolha de palavras
@@ -167,6 +171,7 @@ Toda edição semanal sai com uma capa própria, que mostra de relance do que el
 - [ ] Gráficos conferidos no desktop e no celular; texto alternativo e tabela presentes.
 - [ ] Capa gerada (`npm run cover -- <slug> --apply`) com as referências certas da semana; crédito da foto nas Fontes, se houver foto.
 - [ ] E-mail na coleção **E-mails** ligado à edição; assunto e preheader revisados; preview gerado com `--preview`.
+- [ ] No máximo 10 minutos de leitura (`npm run reading-time -- <slug>`), de preferência entre 8 e 10.
 - [ ] `npm run check` sem erros.
 - [ ] Nenhum dado pessoal de assinante ou segredo no texto (o repositório é público).
 

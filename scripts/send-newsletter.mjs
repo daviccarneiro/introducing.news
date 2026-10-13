@@ -157,7 +157,16 @@ if (!editionNumber) {
   console.warn('⚠ Frontmatter sem "number" — o assunto sairá sem o número da edição.');
 }
 const subject = editionNumber ? `#${editionNumber} - ${subjectBase}` : subjectBase;
-const { html, text } = buildEmail({ title: data.title, description: data.description, url, site: SITE, author, body, date: dateLabel });
+const { html, text } = buildEmail({
+  title: data.title,
+  description: data.description,
+  url,
+  site: SITE,
+  author,
+  body,
+  date: dateLabel,
+  cover: data.coverImage,
+});
 
 const missing = html.match(/\{\{\{(?!RESEND_UNSUBSCRIBE_URL\})[A-Z0-9_]+\}\}\}/g);
 if (missing) {
