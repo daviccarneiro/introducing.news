@@ -35,7 +35,7 @@
   "devDependencies": {
     "@astrojs/check": "^0.9.10",
     "@lobehub/icons-static-svg": "^1.95.1",
-    "@types/node": "^26.6.4",
+    "@types/node": "^26.6.5",
     "marked": "^18.1.0",
     "sharp": "^0.35.5",
     "simple-icons": "^16.35.0",
