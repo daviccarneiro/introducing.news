@@ -1,0 +1,8 @@
+{
+  "headline": ["A IA foi", "trabalhar", "[sozinha]"],
+  "refs": [
+    { "logo": "gemini", "label": "Modo de tarefas do Gemini" },
+    { "logo": "openai", "label": "ChatGPT no Chrome e Slides" },
+    { "logo": "googlechrome", "label": "Extensão do Chrome" }
+  ]
+}
