@@ -19,6 +19,7 @@ Newsletter em português sobre tecnologia, com curadoria de **profissionais de t
 | Segredos | Doppler (`introducing-news/dev_personal`) + Netlify env vars + GitHub secrets | nunca em arquivo versionado |
 | CI/CD | Netlify Git integration | build/deploy automático a cada push na `main` |
 | Analytics | GTM (+ Clarity), tracking do Resend e snapshot p/ Google Sheets | dashboard no Looker Studio; heatmap no Clarity |
+| Aprovação | Bot do Telegram (`@introducing_news_davi_bot`) | prévia (página + e-mail) a cada deploy com rascunho novo; "Aprovar" programa a edição por commit |
 | Erros | Sentry (`@sentry/astro` 11) | DSN/ambiente por env; source maps no build; sem DSN nada é enviado |
 | Design | Figma "introducing.news — Design" | tokens espelhados em `src/styles/tokens.css`; guia para IA em `DESIGN.md` (+ `design/` e assets em `public/brand/`) |
 
@@ -42,10 +43,18 @@ src/
     api/subscribe.ts       # inscrição (valida, rate-limit, Turnstile, Resend)
     api/unsubscribe.ts     # descadastro (mesmas defesas; PATCH unsubscribed no Resend)
     api/hit.ts             # beacon de página vista (contador diário, sem cookie)
+    api/telegram/webhook.ts# bot do Telegram: "Aprovar"/"Desfazer" e comandos (/pendentes)
+    api/telegram/notify.ts # manda as prévias dos rascunhos que mudaram (chamado após o deploy)
+    previa/[slug].astro    # prévia da página de qualquer edição (?t=<token>, noindex)
+    previa/[slug]/email.ts # prévia do e-mail da edição (mesmo HTML do envio)
     painel.astro           # painel de métricas privado (Basic Auth, mobile-first)
   components/              # SiteHeader, SiteFooter, PostCard, Cover, Badge, SubscribeForm
   lib/posts.ts             # consultas, autor da assinatura, readingTime, formatDate
   lib/api.ts               # json/clientIp/rate-limit/Turnstile compartilhados pelas APIs
+  lib/editorial.mjs        # calendário do batch (segunda 12:00) e troca de status (batch + bot)
+  lib/editions.ts          # edições lidas do arquivo-fonte (prévias, pendentes, hash da versão)
+  lib/telegram.ts          # bot: API do Telegram, links/token das prévias, legenda e botões
+  lib/github.ts            # commit da troca de status pela API do GitHub (aprovação)
   lib/metrics.ts           # contadores diários no Netlify Blobs (visitas, inscrições, descadastros, origens)
   lib/dashboard.ts         # dados do /painel (Resend com cache de 10 min + contadores)
   middleware.ts            # 301 de URLs antigas (/pt/*) + noindex do staging (host)
@@ -57,6 +66,8 @@ scripts/email-body.mjs     # converte o MDX do e-mail em HTML de e-mail
 scripts/welcome-email.mjs  # texto do e-mail de boas-vindas (5 min após inscrever)
 scripts/resend-welcome.mjs # publica template + evento + automação de boas-vindas
 scripts/send-newsletter.mjs# disparo de Broadcast
+scripts/compose-email.mjs  # monta assunto/preheader/HTML do e-mail (envio e prévia do bot)
+scripts/telegram-setup.mjs # registra o webhook e os comandos do bot no Telegram
 scripts/resend-template.mjs# publica o template do e-mail no Resend
 scripts/publish-batch.mjs  # publica edições programadas vencidas (batch)
 scripts/cover.mjs          # capa da edição (logotipos/foto + título com marca-texto → PNG)
@@ -67,6 +78,7 @@ scripts/analytics-snapshot.mjs # métricas do Resend → Google Sheets (Looker)
 scripts/google-sheets.mjs  # cliente mínimo do Sheets (service account/JWT)
 public/_headers            # headers de segurança (CSP, HSTS, nosniff…)
 public/images/brand/       # logo em PNG para o e-mail (clientes não renderizam SVG)
+netlify/functions/deploy-succeeded.mjs # evento da Netlify: após o deploy, pede as prévias do Telegram
 netlify.toml               # build + redirects (www→apex 301, cms→/keystatic 302)
 ```
 
@@ -82,6 +94,7 @@ netlify.toml               # build + redirects (www→apex 301, cms→/keystatic
 | `node scripts/send-newsletter.mjs <slug> [--dry-run] [--preview]` | envia a edição por e-mail (`--preview` gera o HTML real no diretório temporário) |
 | `npm run template:sync` | publica/atualiza o template do e-mail no Resend (fonte: `scripts/email-template.mjs`) |
 | `npm run welcome:sync` | publica/atualiza template, evento e automação de boas-vindas no Resend |
+| `npm run telegram:setup` | registra o webhook e os comandos do bot no Telegram (`--status` mostra o estado; `--notify` reenvia as prévias; `--chats` lista quem escreveu ao bot, só sem webhook) |
 | `npm run publish:batch` | publica edições programadas vencidas e prontas (`--dry-run` simula; `--check` só informa) |
 | `npm run reading-time -- <slug>` | minutos de leitura da edição (mesma conta do site); falha acima de 10 min a partir da #2, e o `npm test` também barra |
 | `npm run cover -- <slug> [--apply]` | gera a capa da edição a partir de `design/covers/<slug>.json` (`--apply` grava `coverImage` no frontmatter); `npm run cover -- --find <termo>` procura logotipos |
@@ -109,6 +122,10 @@ Nunca commite valores. O repositório é público.
 | `SENTRY_AUTH_TOKEN` | Doppler, Netlify env, `.env` local | upload de source maps no build (segredo; sem ele o upload é pulado) |
 | `GOOGLE_SHEET_ID` | Doppler, GitHub secret | planilha do snapshot de analytics |
 | `GOOGLE_SERVICE_ACCOUNT_JSON` | Doppler, GitHub secret | service account (JSON) com acesso de Editor à planilha |
+| `TELEGRAM_BOT_TOKEN` | Doppler, Netlify env | token do bot de aprovação (BotFather); sem ele, bot e prévias respondem 404 |
+| `TELEGRAM_CHAT_ID` | Doppler, Netlify env | chat do mantenedor: o único que recebe prévias e pode aprovar |
+| `TELEGRAM_WEBHOOK_SECRET` | Doppler, Netlify env | segredo do webhook (cabeçalho do Telegram), da chamada pós-deploy e chave HMAC dos links de prévia |
+| `GITHUB_CONTENTS_TOKEN` | Doppler, Netlify env | token fine-grained (só este repositório, `Contents: Read and write`) com que o bot commita a aprovação |
 
 - Schema tipado em `astro.config.mjs` (`envField`); o servidor lê de `astro:env/server`.
 - Local: `.env` (gitignored) ou `doppler run --`.
@@ -127,10 +144,18 @@ Nunca commite valores. O repositório é público.
 - `signature` define **quem assina o e-mail** que anuncia a edição — pode ser diferente de quem escreveu o conteúdo. O e-mail usa nome + cargo + foto (ou iniciais) do autor. Obrigatório no CMS; o envio recusa edição sem assinatura.
 - **Status editorial**: `draft` (rascunho) → `review` (em revisão) → `scheduled` (programada) → `published` (publicada). **Só `published` aparece no site, no RSS e no envio.**
 - Em "Programada", `publishedAt` é a data do batch; a data é normalizada para o próximo dia de batch (uma edição marcada para quarta é publicada na segunda seguinte).
-- **Batch**: o workflow **Publicar batch** (`.github/workflows/publish.yml`) é acionado por mudanças em `src/content/posts/**` (o commit do Keystatic ao programar) e por cron nas segundas ao meio-dia (12:00 BRT, horário da newsletter). Antes de tudo, um job de triagem roda `scripts/publish-batch.mjs --check` (sem dependências externas): se não houver edição `scheduled`, vencida e com `title`/`description`/`signature`/`publishedAt`, **nada mais roda** — sem `npm ci`, sem commit, sem deploy. Quando há, o script troca `scheduled` → `published`, commita e aciona o Deploy; o mesmo job espera a página da edição responder 200 no site (até 15 min) e **envia a newsletter** de cada edição publicada (ver "Newsletter"). Programar no CMS é a única ação humana: publicação e e-mail saem juntos na segunda. No dia do batch, a edição só vence a partir das 12:00 (Brasília): dá para revisar e programar na segunda de manhã, e o commit do Keystatic não publica nem envia antes do meio-dia.
+- **Batch**: o workflow **Publicar batch** (`.github/workflows/publish.yml`) é acionado por mudanças em `src/content/posts/**` (o commit do Keystatic ao programar) e por cron nas segundas ao meio-dia (12:00 BRT, horário da newsletter). Antes de tudo, um job de triagem roda `scripts/publish-batch.mjs --check` (sem dependências externas): se não houver edição `scheduled`, vencida e com `title`/`description`/`signature`/`publishedAt`, **nada mais roda** — sem `npm ci`, sem commit, sem deploy. Quando há, o script troca `scheduled` → `published`, commita e aciona o Deploy; o mesmo job espera a página da edição responder 200 no site (até 15 min) e **envia a newsletter** de cada edição publicada (ver "Newsletter"). Programar no CMS (ou aprovar no Telegram, ver "Aprovação no Telegram") é a única ação humana: publicação e e-mail saem juntos na segunda. No dia do batch, a edição só vence a partir das 12:00 (Brasília): dá para revisar e programar na segunda de manhã, e o commit do Keystatic não publica nem envia antes do meio-dia.
 - Imagem de capa preenchida sobrepõe a figura abstrata em todos os lugares (card, destaque, post) e vira a imagem de compartilhamento (OG).
 - **Capa da edição**: a rotina de rascunho de domingo gera a capa junto com o rascunho, com `scripts/cover.mjs` (sem IA de imagem): 2 a 4 referências da semana (logotipos de `@lobehub/icons-static-svg`/`simple-icons`, um nome curto ou uma foto com licença livre do Wikimedia Commons) numa órbita laranja + título curto com marca-texto, nas fontes de `design/fonts/`. Saída em `public/images/covers/<slug>/coverImage.png` (caminho do upload do Keystatic, então dá para trocar a imagem pelo CMS). Regras visuais em `DESIGN.md` 7.1; passo a passo em `EDITORIAL.md` 6.1. Foto exige crédito nas Fontes (o script o imprime e também o desenha na imagem).
 - Todo o texto da interface vive em `src/copy.ts` (funções `t()` e `categoryLabel()`).
+
+### Aprovação no Telegram
+
+- **Prévia**: depois de cada deploy de produção, a função `netlify/functions/deploy-succeeded.mjs` chama `POST /api/telegram/notify` (com `TELEGRAM_WEBHOOK_SECRET`). Para cada edição em `draft`/`review` com batch de hoje em diante cuja versão (arquivo da edição sem a linha de status + e-mail da coleção) mudou desde a última mensagem, o bot manda ao chat `TELEGRAM_CHAT_ID`: capa, título, assunto e preheader do e-mail, tempo de leitura, quando sai e avisos (campo faltando, e-mail automático, acima de 10 min). A prévia anterior da mesma edição perde o botão de aprovar. O estado fica no Netlify Blobs (store `telegram`). Como a prévia só sai depois do deploy, o rascunho do domingo chega no Telegram alguns minutos depois do commit.
+- **Links**: `📄 Página` abre `/previa/<slug>?t=<token>` (a página real da edição, em qualquer status, com aviso no topo, `noindex`, sem GTM e sem contador) e `✉️ E-mail` abre `/previa/<slug>/email?t=<token>` (o HTML exato do envio, montado por `scripts/compose-email.mjs`). O token é um HMAC do slug com `TELEGRAM_WEBHOOK_SECRET`: sem ele (ou com o de outra edição), 404. O CTA do e-mail de prévia aponta para `/arquivo/<slug>/`, que só existe depois de publicar.
+- **Aprovar**: o botão `✅ Aprovar e programar` chama o webhook (`/api/telegram/webhook`), que lê o arquivo na `main` pela API do GitHub, confere que ele é a mesma versão da prévia (senão pede a prévia nova), exige `title`/`description`/`signature`/`publishedAt` e commita `status: scheduled` com `GITHUB_CONTENTS_TOKEN`. É o mesmo que programar no Keystatic: o push dispara o **Publicar batch** (que publica e envia na segunda às 12:00, ou na hora se o batch do dia já passou) e o build da Netlify. `↩️ Desfazer aprovação` volta para `draft` enquanto a edição não saiu.
+- **Comandos**: `/pendentes` reenvia as prévias de tudo que espera aprovação; qualquer outra mensagem mostra a ajuda. Mensagens de outros chats são ignoradas; antes de configurar `TELEGRAM_CHAT_ID`, o bot só responde o chat ID de quem escreve.
+- **Configuração** (uma vez): token do BotFather + segredo aleatório + chat ID + token do GitHub no Doppler e na Netlify (produção, `builds,functions,runtime`, segredo); redeploy; `doppler run -p introducing-news -c dev_personal -- npm run telegram:setup` registra o webhook. Para o token do GitHub: GitHub › Settings › Developer settings › Fine-grained tokens › só `daviccarneiro/introducing.news`, `Contents: Read and write`.
 
 ### Inscrição (`POST /api/subscribe`)
 
@@ -215,6 +240,7 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 18. **Sentry + Edge Function**: o middleware automático do `@sentry/astro` (que importa `@sentry/node`) não roda na Edge Function do Netlify (`middlewareMode: 'edge'`; o adapter empacota com esbuild `platform: 'neutral'` e só aceita imports `node:`). Mantemos `autoInstrumentation.requestHandler: false` — não reative sem testar os redirects (`/pt/*`) e o noindex do staging.
 19. **`_headers` um deploy atrasado**: depois de mudar `public/_headers` (ex.: CSP), a Netlify pode continuar servindo os headers antigos mesmo com arquivos novos no ar — e `purge` de cache não resolve. Um novo build (ex.: commit vazio, como em `50d7f58`) aplica o arquivo novo. Sempre confira o header na produção depois de publicar: `curl -sI https://introducing.news/ | grep -i content-security-policy`.
 20. **Cron do GitHub pode não disparar**: em 12/10/2026 os agendamentos de segunda (na época, Publicar batch 07:45 e Analytics 08:30) simplesmente não rodaram, sem erro. Por isso o `publish.yml` tem disparos reserva (hoje 12:30, 13:15 e 14:15 BRT, depois do envio das 12:00), que são seguros: depois que a edição sai, a triagem não acha nada programado. Se nada rodar, `gh workflow run publish.yml` publica e envia na hora, desde que já passe do meio-dia (a anti-duplicidade impede segundo e-mail). Rede de segurança fora do GitHub: a rotina **introducing.news · checagem de segunda** (Claude, nuvem da Anthropic, segundas 12:45 BRT) confere se a edição está no ar e se o Broadcast saiu; se não, manda um alerta de `oi@introducing.news` para `oi@introducing.news`. Ela só tem acesso a `list-broadcasts` e `send-email` no Resend. A nuvem não alcança o site nem a API pública do GitHub: a página é dada como no ar quando o Broadcast saiu (o workflow só envia depois do 200).
+21. **Bot do Telegram**: com o webhook registrado, `getUpdates` não funciona (`telegram:setup -- --chats` só serve antes do webhook; depois, o `/start` ao bot responde o chat ID enquanto `TELEGRAM_CHAT_ID` não existir). O Telegram guarda fotos por URL: a capa vai com `?v=<versão>` para a prévia nova não mostrar a capa antiga. Variáveis novas na Netlify só valem depois de um redeploy (inclusive para a função `deploy-succeeded`). Se a prévia não chegar depois de um deploy, confira os logs da função `deploy-succeeded` na Netlify e rode `npm run telegram:setup -- --notify`.
 
 ## Decisões de escopo
 
@@ -225,12 +251,13 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 
 ## Segurança
 
-- Antes de commitar: `git diff --cached | grep -E "re_[A-Za-z0-9]{20,}|0x4AAAAA|ghp_|dp\.pt\.|sntry[su]_"` (deve ser vazio).
+- Antes de commitar: `git diff --cached | grep -E "re_[A-Za-z0-9]{20,}|0x4AAAAA|ghp_|github_pat_|dp\.pt\.|sntry[su]_|[0-9]{8,}:AA[A-Za-z0-9_-]{30,}"` (deve ser vazio; o último padrão é o token do bot do Telegram).
 - `.env*`, `dist/`, `.netlify/` são gitignored — mantenha assim.
 - Formulário: e-mail validado, consentimento obrigatório, Turnstile e rate limit por IP; a API **não** expõe nenhum endpoint de leitura de contatos.
 - O snapshot de analytics grava **apenas métricas agregadas** no Google Sheet; nunca exporte e-mails de assinantes para planilhas, logs, issues ou mensagens.
 - `public/_headers` aplica CSP, HSTS, `nosniff`, `Referrer-Policy` e `frame-ancestors 'none'`. Ao adicionar scripts/iframes/fontes externas, atualize a CSP junto.
 - A `RESEND_API_KEY` é full-access (precisa escrever contatos). Mantenha-a somente em segredos; se vazar, rotacione imediatamente.
+- Bot do Telegram: o webhook confere o segredo do cabeçalho e o chat do mantenedor antes de qualquer ação, e só troca o `status` de edições. O `GITHUB_CONTENTS_TOKEN` é fine-grained (só este repositório, só `Contents`); se o token do bot vazar, revogue no BotFather (`/revoke`), atualize Doppler e Netlify e rode `npm run telegram:setup` de novo.
 - Keystatic em produção exige login GitHub com acesso de escrita ao repositório (GitHub App com `Contents: Read and write`).
 
 ## Upgrades
@@ -247,4 +274,4 @@ O formulário (`SubscribeForm.astro`) tem o fluxo e-mail + consentimento → Ass
 - Pesquisa, voz e estrutura das edições (pessoas e agentes de IA): `EDITORIAL.md`.
 - Marca e estilo para pessoas e agentes de IA: `DESIGN.md` (voz, cores, tipografia, imagens, prompts). Assets prontos: `public/brand/` (logo, ícone, capas), tokens legíveis por máquina em `design/tokens.json` e fontes OFL em `design/fonts/`.
 - Painéis: Resend (Domains/Contacts/Segments/Broadcasts), Netlify (projeto `introducing-news`), Cloudflare (DNS da zona + Turnstile), Doppler (projeto `introducing-news`), Sentry (erros do site), Google Tag Manager (contêiner `GTM-TFKQKWHD`), Microsoft Clarity (heatmap do site) e Looker Studio (relatório do Sheet de analytics).
-- Rotas de API: `POST /api/subscribe` (inscrição), `POST /api/unsubscribe` (descadastro), `POST /api/hit` (contador de visitas), `/painel` (métricas, privado), `/api/keystatic/*` (CMS), `/keystatic` (admin).
+- Rotas de API: `POST /api/subscribe` (inscrição), `POST /api/unsubscribe` (descadastro), `POST /api/hit` (contador de visitas), `POST /api/telegram/webhook` (bot) e `POST /api/telegram/notify` (prévias pós-deploy), `/previa/<slug>` e `/previa/<slug>/email` (prévias com token), `/painel` (métricas, privado), `/api/keystatic/*` (CMS), `/keystatic` (admin).

@@ -160,6 +160,8 @@ Toda edição semanal sai com uma capa própria, que mostra de relance do que el
 
 ## 7. Checklist antes de mudar para "Programada"
 
+Vale para os dois caminhos: mudar o status no Keystatic ou tocar em **Aprovar e programar** na prévia que o bot do Telegram manda (página + e-mail, alguns minutos depois de cada commit do rascunho; ver "Aprovação no Telegram" no `AGENTS.md`).
+
 - [ ] Cada número tem fonte linkada e data de consulta quando for ranking ou preço.
 - [ ] Nada da semana foi apresentado com data errada; notícias antigas estão marcadas como tal.
 - [ ] Funcionalidades vêm antes dos modelos e dizem em que plano estão (grátis, pago, em teste).

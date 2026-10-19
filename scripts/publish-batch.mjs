@@ -25,27 +25,13 @@
  * GITHUB_TOKEN não disparam outros workflows por conta própria.
  */
 import { readdir, readFile, writeFile } from 'node:fs/promises';
+import { batchDayFor, isDue, isoDay, saoPauloClock } from '../src/lib/editorial.mjs';
 
 const POSTS_DIR = new URL('../src/content/posts/', import.meta.url);
 const args = process.argv.slice(2);
 const dryRun = args.includes('--dry-run');
 const check = args.includes('--check');
-const BATCH_WEEKDAYS = new Set([1]); // segunda-feira
-const BATCH_TIME = '12:00'; // horário da newsletter (Brasília)
-
-const now = new Date();
-const today = new Intl.DateTimeFormat('en-CA', {
-  timeZone: 'America/Sao_Paulo',
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-}).format(now);
-const nowTime = new Intl.DateTimeFormat('en-GB', {
-  timeZone: 'America/Sao_Paulo',
-  hour: '2-digit',
-  minute: '2-digit',
-  hourCycle: 'h23',
-}).format(now);
+const clock = saoPauloClock();
 
 /** Bloco de frontmatter (sem o corpo), ou null se o arquivo não começar com `---`. */
 function frontmatterOf(raw) {
@@ -57,21 +43,6 @@ function frontmatterOf(raw) {
 function valueOf(front, key) {
   const match = front.match(new RegExp(`^${key}:[ \\t]*['"]?([^'"\\r\\n]+?)['"]?[ \\t]*$`, 'm'));
   return match?.[1]?.trim() || null;
-}
-
-function isoDay(value) {
-  const date = new Date(value);
-  return Number.isNaN(date.valueOf()) ? null : date.toISOString().slice(0, 10);
-}
-
-/** Próximo dia de batch (ou o próprio dia, se já for segunda). */
-function batchDayFor(day) {
-  const date = new Date(`${day}T00:00:00Z`);
-  for (let i = 0; i < 7; i += 1) {
-    if (BATCH_WEEKDAYS.has(date.getUTCDay())) return date.toISOString().slice(0, 10);
-    date.setUTCDate(date.getUTCDate() + 1);
-  }
-  return day;
 }
 
 async function scan() {
@@ -93,9 +64,7 @@ async function scan() {
       continue;
     }
 
-    const batchDay = batchDayFor(day);
-    const isDue = batchDay < today || (batchDay === today && nowTime >= BATCH_TIME);
-    if (isDue) due.push({ name, raw, front: parsed.front, day, batchDay });
+    if (isDue(day, clock)) due.push({ name, raw, front: parsed.front, day, batchDay: batchDayFor(day) });
   }
 
   return { due, incomplete };

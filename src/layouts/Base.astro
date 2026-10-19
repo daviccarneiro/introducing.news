@@ -11,16 +11,22 @@ interface Props {
   /** Imagem de Open Graph/Twitter; sem ela, usa a padrão do site. */
   image?: string;
   noindex?: boolean;
+  /**
+   * Prévia de edição não publicada (`/previa/...`): mostra este aviso no topo,
+   * não indexa e não carrega GTM nem o contador de visitas.
+   */
+  preview?: string;
 }
 
-const { title, description, type = 'website', image, noindex = false } = Astro.props;
+const { title, description, type = 'website', image, preview } = Astro.props;
+const noindex = Astro.props.noindex || Boolean(preview);
 const site = Astro.site ?? new URL('https://introducing.news');
 const canonical = new URL(Astro.url.pathname, site);
 const pageTitle = title ?? t('meta.home.title');
 const pageDescription = description ?? t('meta.home.description');
 const ogImage = new URL(image ?? '/images/og-default.png', site).href;
 const turnstileSiteKey = import.meta.env.PUBLIC_TURNSTILE_SITE_KEY;
-const gtmId = import.meta.env.PUBLIC_GTM_ID;
+const gtmId = preview ? undefined : import.meta.env.PUBLIC_GTM_ID;
 ---
 
 <!doctype html>
@@ -80,12 +86,14 @@ const gtmId = import.meta.env.PUBLIC_GTM_ID;
         </noscript>
       )
     }
+    {preview && <p class="preview-banner" role="status">{preview}</p>}
     <SiteHeader />
     <main>
       <slot />
     </main>
     <SiteFooter />
     {/* Contador próprio do painel (/painel): sem cookie, só soma visitas do dia. */}
+    {!preview && (
     <script is:inline>
       (function () {
         try {
@@ -96,5 +104,21 @@ const gtmId = import.meta.env.PUBLIC_GTM_ID;
         } catch (_) {}
       })();
     </script>
+    )}
   </body>
 </html>
+
+<style>
+  .preview-banner {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    margin: 0;
+    padding: var(--space-2) var(--space-4);
+    background: var(--accent-soft);
+    color: var(--accent-soft-foreground);
+    font: 500 12px/1.5 var(--font-mono);
+    letter-spacing: 0.04em;
+    text-align: center;
+  }
+</style>

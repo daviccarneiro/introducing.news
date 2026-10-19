@@ -3,5 +3,6 @@ Allow: /
 
 Disallow: /api/
 Disallow: /descadastrar
+Disallow: /previa/
 
 Sitemap: https://introducing.news/sitemap.xml

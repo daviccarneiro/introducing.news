@@ -23,8 +23,7 @@ import { readdir, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { parseFrontmatter } from './frontmatter.mjs';
-import { buildEmail } from './email-template.mjs';
-import { renderEmailBody } from './email-body.mjs';
+import { composeEmail, pickEmail } from './compose-email.mjs';
 
 const POSTS_DIR = new URL('../src/content/posts/', import.meta.url);
 const AUTHORS_DIR = new URL('../src/content/authors/', import.meta.url);
@@ -84,24 +83,20 @@ async function loadAuthor(signature) {
   process.exit(1);
 }
 
-/** E-mail da coleção "E-mails" associado à edição (`edition: <slug>`). */
-async function findEmailFor(edition) {
+/** Entradas da coleção "E-mails" (`{ name, data, content }`), em ordem de arquivo. */
+async function loadEmails() {
   let names;
   try {
     names = (await readdir(EMAILS_DIR)).filter((name) => name.endsWith('.mdx')).sort();
   } catch {
-    return null; // coleção ainda não existe
+    return []; // coleção ainda não existe
   }
-  const matches = [];
+  const emails = [];
   for (const name of names) {
     const raw = await readFile(new URL(name, EMAILS_DIR), 'utf8');
-    const email = parseFrontmatter(raw);
-    if (email.data.edition === edition) matches.push({ name, ...email });
+    emails.push({ name, ...parseFrontmatter(raw) });
   }
-  if (matches.length > 1) {
-    console.warn(`⚠ ${matches.length} e-mails apontam para "${edition}" — usando ${matches[0].name}.`);
-  }
-  return matches[0] ?? null;
+  return emails;
 }
 
 const file = new URL(`${slug}.mdx`, POSTS_DIR);
@@ -127,49 +122,17 @@ if (!data.title || !data.description) {
 }
 
 const author = await loadAuthor(data.signature);
-// UTM no CTA: atribui a origem das inscrições feitas a partir do e-mail
-// (o formulário guarda signup_utm no contato — ver "Analytics" no AGENTS.md).
-const url = `${SITE}/arquivo/${slug}/?utm_source=newsletter&utm_medium=email&utm_campaign=edicao-${slug}`;
-const dateLabel = new Intl.DateTimeFormat('pt-BR', {
-  day: 'numeric',
-  month: 'long',
-  year: 'numeric',
-}).format(new Date(data.publishedAt));
-
-const email = await findEmailFor(slug);
-let body = { html: '', text: '' };
-let subjectBase = data.title;
-let preview = data.description;
-
-if (email) {
-  body = renderEmailBody(email.content, SITE);
-  subjectBase = email.data.subject || data.title;
-  preview = email.data.previewText || data.description;
-  if (!body.html) {
-    console.warn(`⚠ E-mail "${email.name}" está sem conteúdo — enviando só o resumo da edição.`);
-  }
-} else {
-  console.warn('⚠ Nenhum e-mail na coleção "E-mails" para esta edição — enviando a versão automática (título + resumo).');
-}
-
-const editionNumber = Number.isInteger(data.number) ? data.number : null;
-if (!editionNumber) {
-  console.warn('⚠ Frontmatter sem "number" — o assunto sairá sem o número da edição.');
-}
-const subject = editionNumber ? `#${editionNumber} - ${subjectBase}` : subjectBase;
-const { html, text } = buildEmail({
-  title: data.title,
-  description: data.description,
-  url,
-  site: SITE,
+const { email, warnings: pickWarnings } = pickEmail(await loadEmails(), slug);
+const { subject, preview, html, text, warnings, missing } = composeEmail({
+  slug,
+  post: data,
+  email,
   author,
-  body,
-  date: dateLabel,
-  cover: data.coverImage,
+  site: SITE,
 });
+for (const warning of [...pickWarnings, ...warnings]) console.warn(`⚠ ${warning}`);
 
-const missing = html.match(/\{\{\{(?!RESEND_UNSUBSCRIBE_URL\})[A-Z0-9_]+\}\}\}/g);
-if (missing) {
+if (missing.length > 0) {
   console.error(`✖ Variáveis não preenchidas no e-mail: ${missing.join(', ')}.`);
   process.exit(1);
 }

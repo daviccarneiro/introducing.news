@@ -1,0 +1,35 @@
+---
+export const prerender = false;
+
+import { getEntry } from 'astro:content';
+import PostView from '../../views/PostView.astro';
+import { validPreviewToken } from '../../lib/telegram';
+
+/**
+ * Prévia da página de uma edição em qualquer status (link mandado pelo bot do
+ * Telegram). Só abre com `?t=<token>` do próprio slug; fora disso, 404.
+ */
+Astro.response.headers.set('Cache-Control', 'private, no-store');
+Astro.response.headers.set('X-Robots-Tag', 'noindex, nofollow');
+Astro.response.headers.set('Referrer-Policy', 'no-referrer');
+
+const slug = Astro.params.slug ?? '';
+if (!validPreviewToken(slug, Astro.url.searchParams.get('t'))) {
+  return new Response('Not found', { status: 404 });
+}
+const post = await getEntry('posts', slug);
+if (!post) return new Response('Not found', { status: 404 });
+
+const STATUS: Record<string, string> = {
+  draft: 'rascunho',
+  review: 'em revisão',
+  scheduled: 'programada',
+  published: 'publicada',
+};
+const label =
+  post.data.status === 'published'
+    ? 'Prévia · esta edição já está publicada'
+    : `Prévia · ${STATUS[post.data.status] ?? post.data.status} · ainda não publicada`;
+---
+
+<PostView post={post} preview={label} />

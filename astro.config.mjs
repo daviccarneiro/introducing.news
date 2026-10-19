@@ -36,6 +36,14 @@ export default defineConfig({
       PUBLIC_SENTRY_DSN: envField.string({ context: 'client', access: 'public', optional: true }),
       PUBLIC_SENTRY_ENVIRONMENT: envField.string({ context: 'client', access: 'public', optional: true }),
       SENTRY_AUTH_TOKEN: envField.string({ context: 'server', access: 'secret', optional: true }),
+      // Bot de aprovação no Telegram (prévias + "Aprovar"). Sem o token e o
+      // segredo do webhook, as rotas do bot e as prévias respondem 404.
+      TELEGRAM_BOT_TOKEN: envField.string({ context: 'server', access: 'secret', optional: true }),
+      TELEGRAM_CHAT_ID: envField.string({ context: 'server', access: 'secret', optional: true }),
+      TELEGRAM_WEBHOOK_SECRET: envField.string({ context: 'server', access: 'secret', optional: true }),
+      // Token do GitHub (fine-grained, só este repositório, Contents: read and
+      // write) com que o bot commita a troca de status ao aprovar.
+      GITHUB_CONTENTS_TOKEN: envField.string({ context: 'server', access: 'secret', optional: true }),
     },
   },
   // `middlewareMode: 'edge'` faz o middleware (redirects de /pt e /en) rodar em

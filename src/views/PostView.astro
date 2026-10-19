@@ -9,9 +9,11 @@ import { getAuthor, getPosts, initialsOf, readingTime, type Post } from '../lib/
 
 interface Props {
   post: Post;
+  /** Aviso de prévia (edição ainda não publicada); ver `Base.astro`. */
+  preview?: string;
 }
 
-const { post } = Astro.props;
+const { post, preview } = Astro.props;
 const { Content } = await render(post);
 const related = (await getPosts()).filter((entry) => entry.id !== post.id).slice(0, 3);
 const postUrl = new URL(`/arquivo/${post.id}/`, Astro.site ?? Astro.url).href;
@@ -31,6 +33,7 @@ const ogImage =
   description={post.data.description}
   type="article"
   image={ogImage}
+  preview={preview}
 >
   <article>
     <header class="post-head container">
