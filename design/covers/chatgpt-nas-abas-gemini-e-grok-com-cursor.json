@@ -1,0 +1,9 @@
+{
+  "headline": ["ChatGPT nas abas,", "Grok com [Cursor]"],
+  "refs": [
+    { "logo": "openai", "label": "ChatGPT nas abas do Chrome" },
+    { "logo": "gemini", "label": "Modo de tarefas do Gemini" },
+    { "logo": "grok", "label": "X Subscription" },
+    { "logo": "cursor", "label": "Cursor no plano do Grok" }
+  ]
+}

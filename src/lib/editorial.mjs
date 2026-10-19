@@ -69,3 +69,35 @@ export function replaceStatus(raw, from, to) {
   const start = raw.indexOf(front);
   return raw.slice(0, start) + nextFront + raw.slice(start + front.length);
 }
+
+/**
+ * Texto de rascunho que nunca pode ir para o leitor (aviso da curadoria,
+ * TODO, lorem ipsum, "[inserir link]"…). Dúvidas e sugestões para o
+ * mantenedor vão em `editorial/notes/<slug>.md`, que o bot manda no Telegram.
+ */
+const PLACEHOLDERS = [
+  /^[ \t>*_-]*rascunho\s*:/im,
+  /curadoria autom[aá]tica/i,
+  /\b(TODO|TBD|FIXME|XXX)\b/,
+  /lorem ipsum/i,
+  /\[\s*(preencher|inserir|completar|link|fonte|data|nome)\b[^\]]*\](?!\()/i, // não pega [texto](url)
+  /\b(revise|troque) (ou troque )?pela sua\b/i,
+];
+
+/**
+ * Trechos de placeholder encontrados no texto (vazio = limpo).
+ * @returns {string[]}
+ */
+export function placeholdersIn(text) {
+  const source = String(text ?? '');
+  return PLACEHOLDERS.flatMap((pattern) => source.match(pattern)?.[0]?.trim() || []);
+}
+
+/** A partir da #2, toda edição tem pelo menos esta quantidade de gráficos/imagens no corpo. */
+export const MIN_VISUALS = 2;
+
+/** Imagens e gráficos no corpo MDX (`![alt](src)` ou `<img>`). */
+export function countVisuals(content) {
+  const source = String(content ?? '');
+  return (source.match(/!\[[^\]]*\]\([^)]+\)/g) ?? []).length + (source.match(/<img\s/gi) ?? []).length;
+}

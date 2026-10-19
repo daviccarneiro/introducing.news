@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto';
 import { parseFrontmatter } from '../../scripts/frontmatter.mjs';
 import { composeEmail, pickEmail } from '../../scripts/compose-email.mjs';
 import { readingMinutes } from './reading-time.mjs';
-import { batchDayFor, isoDay, saoPauloClock } from './editorial.mjs';
+import { batchDayFor, countVisuals, isoDay, placeholdersIn, saoPauloClock } from './editorial.mjs';
 
 /**
  * Edições lidas do arquivo-fonte (frontmatter + MDX cru), como os scripts as
@@ -16,6 +16,12 @@ const postFiles = import.meta.glob<string>('/src/content/posts/*.mdx', {
   eager: true,
 });
 const emailFiles = import.meta.glob<string>('/src/content/emails/*.mdx', {
+  query: '?raw',
+  import: 'default',
+  eager: true,
+});
+/** Pontos para o mantenedor revisar (sugestões, dúvidas, fonte única): vão pelo Telegram, nunca no texto. */
+const noteFiles = import.meta.glob<string>('/editorial/notes/*.md', {
   query: '?raw',
   import: 'default',
   eager: true,
@@ -35,10 +41,27 @@ export interface Edition {
   /** `publishedAt` em AAAA-MM-DD (null se faltar). */
   day: string | null;
   minutes: number;
+  /** Gráficos e imagens no corpo. */
+  visuals: number;
+  /** Trechos de placeholder na edição ou no e-mail (deveria ser vazio). */
+  placeholders: string[];
+  /** Pontos de revisão de `editorial/notes/<slug>.md`, um por item. */
+  notes: string[];
   /** Hash do arquivo da edição sem a linha de status (aprovar não muda a versão). */
   postHash: string;
   /** Hash da edição + e-mail: muda quando qualquer um dos dois é editado. */
   version: string;
+}
+
+/** Itens de uma lista Markdown (`- ...`), com as linhas de continuação juntadas. */
+export function noteItems(markdown: string): string[] {
+  const items: string[] = [];
+  for (const line of String(markdown).split(/\r?\n/)) {
+    const item = line.match(/^\s*(?:[-*]|\d+\.)\s+(.*)$/);
+    if (item) items.push(item[1].trim());
+    else if (line.trim() && items.length > 0 && !line.startsWith('#')) items[items.length - 1] += ` ${line.trim()}`;
+  }
+  return items.filter(Boolean);
 }
 
 const baseName = (path: string) => path.slice(path.lastIndexOf('/') + 1).replace(/\.(mdx|json)$/, '');
@@ -66,6 +89,7 @@ const editions: Edition[] = Object.entries(postFiles).map(([path, raw]) => {
     .filter((email) => email.data?.edition === slug)
     .map((email) => email.raw)
     .join('\n');
+  const notesRaw = Object.entries(noteFiles).find(([notePath]) => baseName(notePath) === slug)?.[1] ?? '';
   return {
     slug,
     data,
@@ -73,8 +97,11 @@ const editions: Edition[] = Object.entries(postFiles).map(([path, raw]) => {
     status: typeof data.status === 'string' ? data.status : 'draft',
     day: isoDay(data.publishedAt),
     minutes: readingMinutes(content),
+    visuals: countVisuals(content),
+    placeholders: [...new Set([...placeholdersIn(raw), ...placeholdersIn(emailRaw)])],
+    notes: noteItems(notesRaw),
     postHash,
-    version: sha(`${postHash}\n${emailRaw}`).slice(0, 16),
+    version: sha(`${postHash}\n${emailRaw}\n${notesRaw}`).slice(0, 16),
   };
 });
 

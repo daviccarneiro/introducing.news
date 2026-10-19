@@ -1,7 +1,7 @@
 import { createHash, createHmac, timingSafeEqual } from 'node:crypto';
 import { getStore } from '@netlify/blobs';
 import { TELEGRAM_BOT_TOKEN, TELEGRAM_CHAT_ID, TELEGRAM_WEBHOOK_SECRET } from 'astro:env/server';
-import { BATCH_TIME, batchDayFor, isDue, saoPauloClock } from './editorial.mjs';
+import { BATCH_TIME, MIN_VISUALS, batchDayFor, isDue, saoPauloClock } from './editorial.mjs';
 import { MAX_READING_MINUTES } from './reading-time.mjs';
 import { editionEmail, missingFields, pendingEditions, type Edition } from './editions';
 
@@ -73,6 +73,32 @@ export function whenLine(edition: Edition, clock: Clock): string {
   return `🗓 Sai ${longDay(batchDayFor(edition.day))}, às ${BATCH_TIME}.`;
 }
 
+/** Semanais (a partir da #2) seguem as regras de tamanho e de imagens. */
+const isWeekly = (edition: Edition) => !Number.isInteger(edition.data.number) || edition.data.number >= 2;
+
+/** Markdown simples (negrito, código, links) → HTML do Telegram, já escapado. */
+function inlineHtml(markdown: string): string {
+  return escape(markdown)
+    .replace(/\*\*(.+?)\*\*/g, '<b>$1</b>')
+    .replace(/`([^`]+)`/g, '<code>$1</code>')
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^)\s]+)\)/g, (_match, text, url) => `<a href="${url.replace(/"/g, '&quot;')}">${text}</a>`);
+}
+
+/** Mensagem com os pontos de revisão da edição (null se não houver). */
+export function notesMessage(edition: Edition): string | null {
+  if (edition.notes.length === 0) return null;
+  const lines = [`🔎 <b>Pontos para você revisar</b> (${escape(edition.data.title)})`, ''];
+  for (const note of edition.notes) {
+    const line = `• ${inlineHtml(note)}`;
+    if (lines.join('\n').length + line.length > 3800) {
+      lines.push('…e mais pontos em editorial/notes no repositório.');
+      break;
+    }
+    lines.push(line);
+  }
+  return lines.join('\n');
+}
+
 /** Legenda da prévia (HTML do Telegram). */
 export function captionFor(edition: Edition, clock: Clock, approved = false): string {
   const { data } = edition;
@@ -82,6 +108,10 @@ export function captionFor(edition: Edition, clock: Clock, approved = false): st
     ...(email?.warnings ?? []),
     ...(email?.missing?.length ? [`variáveis sem valor no e-mail: ${email.missing.join(', ')}`] : []),
     ...(edition.minutes > MAX_READING_MINUTES ? [`${edition.minutes} min de leitura (limite: ${MAX_READING_MINUTES})`] : []),
+    ...edition.placeholders.map((text) => `texto de rascunho no conteúdo: "${text}"`),
+    ...(isWeekly(edition) && edition.visuals < MIN_VISUALS
+      ? [`${edition.visuals} gráfico(s)/imagem(ns) no corpo (mínimo: ${MIN_VISUALS})`]
+      : []),
   ];
   const number = Number.isInteger(data.number) ? ` #${data.number}` : '';
   const lines = [
@@ -90,9 +120,10 @@ export function captionFor(edition: Edition, clock: Clock, approved = false): st
     '',
     `✉️ <b>Assunto:</b> ${escape(email?.subject ?? data.title)}`,
     `👀 <b>Preheader:</b> ${escape(email?.preview ?? data.description)}`,
-    `⏱ ${edition.minutes} min de leitura`,
+    `⏱ ${edition.minutes} min de leitura · 🖼 ${edition.visuals} gráfico(s)/imagem(ns)`,
     whenLine(edition, clock),
     ...warnings.map((warning) => `⚠️ ${escape(warning)}`),
+    ...(edition.notes.length > 0 ? [`🔎 <b>${edition.notes.length} ponto(s) para você revisar</b> na mensagem abaixo.`] : []),
   ];
   return lines.join('\n');
 }
@@ -144,6 +175,21 @@ export async function editPreview(
 }
 
 export async function sendPreview(edition: Edition, clock: Clock): Promise<SentPreview> {
+  const sent = await sendPreviewMessage(edition, clock);
+  const notes = notesMessage(edition);
+  if (notes) {
+    await telegram('sendMessage', {
+      chat_id: TELEGRAM_CHAT_ID,
+      text: notes,
+      parse_mode: 'HTML',
+      reply_parameters: { message_id: sent.messageId },
+      link_preview_options: { is_disabled: true },
+    }).catch((error) => console.error('[telegram] pontos de revisão não enviados:', error));
+  }
+  return sent;
+}
+
+async function sendPreviewMessage(edition: Edition, clock: Clock): Promise<SentPreview> {
   const caption = captionFor(edition, clock);
   const reply_markup = keyboardFor(edition, 'pending');
   const photo = coverUrl(edition);

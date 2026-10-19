@@ -1,0 +1,6 @@
+- **Minha recomendação** foi escrita pela curadoria, não por você: a extensão do ChatGPT no Chrome, começando pelo modo Chat. Confirme se você recomenda mesmo (e, se usa, troque "Como começar" por "Como eu uso") ou me diga qual ferramenta entra no lugar.
+- **Título e slug mudaram** para `chatgpt-nas-abas-gemini-e-grok-com-cursor` (antes, "A IA foi trabalhar sozinha", parecido demais com a #1). A capa e o assunto do e-mail acompanham.
+- **Grok + Cursor + X (X Subscription)**: preços em dólar dos EUA, da página da [xAI](https://x.ai/news/x-subscription) e da Teslarati. Não há preço em reais. Parte da imprensa chama a empresa de SpaceXSI; usei xAI, que é quem assina o anúncio.
+- **Gráfico de preços**: ChatGPT Plus (US$ 20, central de ajuda da OpenAI) e Claude Pro (US$ 20, página da Anthropic) vêm de fonte primária; o Google AI Pro (US$ 19,99) vem do Tom's Guide, porque a página do Google só mostra o preço no Brasil (R$ 96,99).
+- **iPhone Duo**: preços e datas no Brasil de duas reportagens (SBT News e Times Brasil/CNBC), não da página da Apple.
+- **Cortes para caber nos 10 minutos**: saíram as vozes novas do ChatGPT, o Code Review do Claude, o processo de oito estados americanos contra a OpenAI e a data do Claude Design (14/12). Gemini, extensão do ChatGPT, Slides, Argon e TSE seguem com a apuração e as fontes do rascunho de domingo.

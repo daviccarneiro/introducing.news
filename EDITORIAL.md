@@ -7,6 +7,7 @@
 - **Leitor principal**: quem usa tecnologia e IA no trabalho sem ser especialista. Gente de marketing, direito, RH, finanças, vendas, educação, gestão. Também programadores, que gostam de contexto bem feito.
 - **O que essa pessoa quer**: entender o que mudou na semana, por que importa para ela e o que fazer com isso, sem precisar ler dez sites em inglês.
 - **Multidisciplinar no texto inteiro, não em seções.** Não crie seções por profissão ("Para quem é de marketing", "Para quem é de direito"). Cada seção precisa funcionar para todo mundo: os exemplos práticos misturam áreas no mesmo parágrafo ("a coordenação de marketing acompanha a campanha, o financeiro olha o caixa, o RH vê as contratações"). Uma pessoa de marketing tem que gostar da edição inteira, não só de um trecho.
+- **Tecnologia, não só IA.** A newsletter é sobre as ferramentas que o leitor usa: apps novos, atualizações de sistema (macOS, iOS, Windows, Android), apps que o Brasil inteiro já usa no trabalho (Google Workspace, Microsoft 365 e Teams, WhatsApp e WhatsApp Business, ManyChat, Canva, Notion, Slack, Zoom), aparelhos que chegam aqui e mudanças de preço e de plano. IA costuma dominar a semana, mas **toda edição tem pelo menos um destaque que não é de IA**.
 - **Funcionalidade antes de modelo.** O que o leitor pode usar (um recurso novo no Claude, no ChatGPT, no Gemini, no Gmail) vem antes e ganha mais espaço do que o modelo por trás dele. Modelos entram "sem tecniquês", com comparativos e gráficos que provam o que se diz.
 - **Teste de cada parágrafo**: "alguém de marketing, do jurídico ou do RH entende isso sem abrir outra aba e enxerga um uso no próprio trabalho?" Se não, explique o termo numa frase, troque o exemplo ou corte.
 
@@ -16,6 +17,7 @@
 
 1. **Janela**: da segunda anterior até o domingo antes do envio. Um assunto mais antigo pode entrar se ainda for relevante, mas com a data certa no texto ("saiu em 22 de setembro"), nunca como se fosse da semana.
 2. **Pauta fixa** (buscar todas as semanas, nesta ordem de prioridade):
+   - **ferramentas e apps além de IA**: lançamentos e atualizações de sistemas (macOS, iOS, iPadOS, Windows, Android) e de apps de trabalho usados no Brasil (Google Workspace e Workspace Studio, Microsoft 365, Teams, Outlook, WhatsApp e WhatsApp Business, ManyChat, Canva, Notion, Slack, Zoom, Trello, RD Station), aparelhos que chegam ao Brasil com preço em reais, e **preços e planos** (ex.: em 12/10/2026 o plano que juntou Grok, Cursor e X por US$ 30 ficou competitivo com os US$ 20 de ChatGPT Plus e Claude Pro). Mudança de preço quase sempre rende um gráfico comparativo;
    - **funcionalidades novas** que qualquer pessoa pode usar: recursos do Claude, ChatGPT, Gemini, Copilot, Google Workspace, Microsoft 365, Notion, Canva e apps do dia a dia (ex.: Claude Dashboards, Intelligent UI do GPT-6, agente do Gemini). Confira plano (grátis ou pago), disponibilidade no Brasil e se está em teste;
    - lançamentos de modelos (Anthropic, OpenAI, Google, Meta, xAI, DeepSeek, Alibaba/Qwen, Moonshot/Kimi, Mistral), com destaque para o que muda no plano gratuito;
    - o que viralizou entre programadores, explicado para quem não programa (ex.: Jev);
@@ -26,7 +28,8 @@
 
 ### 2.2 Como buscar
 
-- Comece com buscas amplas por semana ("AI news this week <mês> <ano>", "inteligência artificial notícias semana <mês> <ano>") e depois uma busca específica por item.
+- Comece com buscas amplas por semana ("AI news this week <mês> <ano>", "inteligência artificial notícias semana <mês> <ano>") **e também fora de IA** ("tech news this week <mês> <ano>", "novidades apps semana <mês> <ano>", "<app> new feature <mês> <ano>" para cada app da pauta fixa, "preço plano <produto> <mês> <ano>"), e depois uma busca específica por item.
+- Fontes fora de IA que valem a pena: Google Workspace Updates (`workspaceupdates.googleblog.com`), Microsoft 365 Roadmap e blog do Teams, Apple Newsroom, 9to5Mac e MacRumors, blog oficial de cada app (ex.: ManyChat), Tecnoblog, Canaltech e TechTudo (preço e chegada ao Brasil).
 - Para cada item, procure **a fonte primária** (blog oficial, página do modelo, documentação de preços, portaria no gov.br, decisão no tribunal) e **uma fonte independente** (imprensa de tecnologia, análise de especialista).
 - Fontes que funcionaram bem:
   - **Primárias**: páginas de modelos e de preços (`anthropic.com/claude/*`, `api-docs.deepseek.com/quick_start/pricing`), relatórios técnicos no arXiv, `gov.br`.
@@ -56,7 +59,9 @@ Para cada item, responda nesta ordem:
 3. **O que isso muda para você**, com exemplos de áreas diferentes no mesmo parágrafo (marketing, jurídico, RH, financeiro, vendas, educação, código).
 4. **Um aviso honesto / Onde ter cuidado** (limites, números da própria empresa, privacidade).
 
-Procure um **fio condutor** da semana para o título (na edição de referência: "a IA saiu do chat"), que amarre os destaques.
+Procure um **fio condutor** da semana, que amarre os destaques.
+
+**Título**: específico, com os nomes do que aconteceu (produto, empresa, número), como "ChatGPT nas suas abas, Gemini em segundo plano e Grok com Cursor por US$ 30". Nada de título genérico que serviria para qualquer semana, e nada de repetir a fórmula ou as palavras de abertura das edições anteriores: compare com os títulos já publicados antes de fechar ("A IA saiu do chat" na #1 tornou "A IA foi trabalhar sozinha" genérico e repetido na #2). Vale também para o título da capa e o assunto do e-mail.
 
 ## 3. Estrutura da edição (página no site)
 
@@ -68,13 +73,15 @@ Coleção **Edições** (`src/content/posts/<slug>.mdx`). Ordem que funcionou:
 4. **Os modelos, sem tecniquês**: lançamentos explicados pelo que permitem fazer; tabela de benchmark com a coluna "O que mede, em português claro".
 5. **O assunto que viralizou** (quando houver), explicado com exemplos de várias áreas e com as críticas.
 6. **Comparativo** (quando houver dado): gráfico + tabela com os mesmos números + "Como usar esse placar".
-7. **Minha recomendação**: uma ferramenta ou modelo que o mantenedor usa de verdade, em primeira pessoa, com três motivos em bullets, "Como eu uso" e "O cuidado que eu tomo".
+7. **Minha recomendação**: uma ferramenta ou modelo que o mantenedor usa de verdade, em primeira pessoa, com três motivos em bullets, "Como eu uso" e "O cuidado que eu tomo". Quando a curadoria sugerir a recomendação, a seção sai **pronta para publicar** (sem inventar experiência do mantenedor, sem aviso no texto) e o pedido de confirmação vai nos pontos de revisão (abaixo).
 8. **Golpes, regras e responsabilidade**: 2 a 3 bullets sobre regulação, golpes e uso responsável, cada um com a consequência para quem consome e para quem trabalha com aquilo.
 9. **Datas para anotar**: data em negrito, nome, lugar e uma frase do porquê (eventos, prazos de regras, mudanças de produto).
 10. **Fechamento**: o que vem nas próximas edições + convite para responder o e-mail + "Até segunda que vem."
 11. **Fontes**: lista com veículo e link, na ordem em que aparecem.
 
 Não use seções separadas por profissão: o leitor de qualquer área precisa encontrar exemplos para si ao longo de todo o texto.
+
+**Nunca deixe texto de rascunho na edição ou no e-mail**: aviso para o mantenedor ("Rascunho: ..."), "TODO", "[inserir link]", "revise antes de publicar". O texto sai sempre pronto para o leitor; o `npm test` reprova placeholder. Tudo que precisa da supervisão do mantenedor (recomendação sugerida, fato com fonte única, número sem fonte primária, corte feito para caber, dúvida) vai em **`editorial/notes/<slug>.md`**, uma lista Markdown que o bot manda no Telegram logo abaixo da prévia.
 
 Frontmatter: `number` é a última edição + 1 (a #0 é a introdução do projeto; as semanais começam na #1); `title` com o fio condutor + os nomes principais; `description` em uma frase que liste os destaques (ela aparece no card, no RSS e no topo do e-mail); `publishedAt` na segunda do envio; `cover` com uma figura de reserva (`fig-01/02/03`); `coverImage` com a capa da edição (seção 6.1); `status: draft` até a revisão.
 
@@ -134,7 +141,8 @@ Glossário de referência:
 
 ## 6. Gráficos, tabelas e imagens
 
-- **Quando usar**: comparativos (nota, preço, velocidade), conceitos que ficam mais claros desenhados (ex.: "chat × Jev"). Não use gráfico para um número só.
+- **Toda edição semanal tem pelo menos 2 gráficos ou imagens no corpo** (o `npm test` barra quem tiver menos). Uma edição só de texto não sai.
+- **Quando usar**: comparativos (nota, preço, plano, velocidade), conceitos que ficam mais claros desenhados (ex.: "chat × Jev", "até onde você deixa a IA ir"). Não use gráfico para um número só. Se a semana não tiver dado para comparar, procure: preço de plano, ranking da Artificial Analysis, linha do tempo de lançamentos, antes × depois de um recurso.
 - **Formato**: SVG em `public/images/posts/<slug>/` (mesma pasta que o upload do CMS usa), referenciado no MDX como `![texto alternativo](/images/posts/<slug>/arquivo.svg)`. Use os SVGs da edição `a-ia-saiu-do-chat` como modelo.
 - **Especificação visual** (segue `DESIGN.md` e boas práticas de dataviz):
   - largura 600 (`width="600"` + `viewBox`), fundo branco, fonte `Geist, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif` (o SVG em `<img>` não carrega fonte da web);
@@ -170,7 +178,10 @@ Vale para os dois caminhos: mudar o status no Keystatic ou tocar em **Aprovar e 
 - [ ] Gráficos e comparativos que sustentam as afirmações estão na página, com fonte.
 - [ ] Recomendação com motivos concretos e com o cuidado de privacidade.
 - [ ] Sem exclamação, sem travessão, sem jargão sem explicação (`grep -nE '—|!([^[]|$)' src/content/posts/<slug>.mdx`).
-- [ ] Gráficos conferidos no desktop e no celular; texto alternativo e tabela presentes.
+- [ ] Pelo menos 2 gráficos ou imagens no corpo, conferidos no desktop e no celular; texto alternativo e tabela presentes.
+- [ ] Pelo menos um destaque que não é de IA (app, sistema, aparelho, preço ou plano).
+- [ ] Título específico e diferente das edições anteriores (também na capa e no assunto do e-mail).
+- [ ] Nenhum texto de rascunho na edição ou no e-mail; o que precisa de supervisão está em `editorial/notes/<slug>.md`.
 - [ ] Capa gerada (`npm run cover -- <slug> --apply`) com as referências certas da semana; crédito da foto nas Fontes, se houver foto.
 - [ ] E-mail na coleção **E-mails** ligado à edição; assunto e preheader revisados; preview gerado com `--preview`.
 - [ ] No máximo 10 minutos de leitura (`npm run reading-time -- <slug>`), de preferência entre 8 e 10.
@@ -179,4 +190,4 @@ Vale para os dois caminhos: mudar o status no Keystatic ou tocar em **Aprovar e 
 
 ## 8. Prompt para gerar a próxima edição (agentes)
 
-> Leia `AGENTS.md`, `DESIGN.md` e `EDITORIAL.md`. Pesquise as notícias de tecnologia e IA de <data inicial> a <data final> seguindo a seção 2, priorizando funcionalidades que pessoas de qualquer área possam usar (pauta fixa + estes pedidos: <pedidos do mantenedor>). Monte a edição na coleção Edições com `status: draft` e `publishedAt: <segunda>`, seguindo a estrutura da seção 3, e o e-mail na coleção E-mails seguindo a seção 4. Recomendação da semana: <ferramenta e motivos do mantenedor>. Crie gráficos conforme a seção 6 quando houver comparativo e a capa conforme a seção 6.1. Rode o checklist da seção 7, gere o preview do e-mail e mostre a página renderizada antes de qualquer commit.
+> Leia `AGENTS.md`, `DESIGN.md` e `EDITORIAL.md`. Pesquise as notícias de tecnologia de <data inicial> a <data final> seguindo a seção 2 (IA e também apps, sistemas, aparelhos e preços), priorizando funcionalidades que pessoas de qualquer área possam usar (pauta fixa + estes pedidos: <pedidos do mantenedor>). Monte a edição na coleção Edições com `status: draft` e `publishedAt: <segunda>`, seguindo a estrutura da seção 3, e o e-mail na coleção E-mails seguindo a seção 4. Recomendação da semana: <ferramenta e motivos do mantenedor>. Crie pelo menos 2 gráficos ou imagens conforme a seção 6 e a capa conforme a seção 6.1. Dúvidas e sugestões vão em `editorial/notes/<slug>.md`, nunca no texto. Rode o checklist da seção 7, gere o preview do e-mail e mostre a página renderizada antes de qualquer commit.
