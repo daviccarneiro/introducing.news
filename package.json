@@ -29,7 +29,7 @@
     "@sentry/astro": "^11.6.0",
     "astro": "^7.3.6",
     "astro-typewriter": "^1.2.0",
-    "marked": "^18.1.0",
+    "marked": "^18.1.1",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "resend": "^6.32.0",
