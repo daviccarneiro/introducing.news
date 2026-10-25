@@ -1,0 +1,9 @@
+{
+  "headline": ["Claude Duet toma", "a [iniciativa]"],
+  "refs": [
+    { "logo": "claude", "label": "Claude Duet" },
+    { "logo": "openai", "label": "Conversas trancadas no ChatGPT" },
+    { "logo": "php", "label": "Falha PHP2Shell" },
+    { "logo": "netflix", "label": "Netflix mais cara" }
+  ]
+}
