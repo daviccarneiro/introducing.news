@@ -3,17 +3,26 @@ name: Publicar batch
 on:
   # O commit do Keystatic ao programar uma edição (status: scheduled) dispara a
   # triagem; se nada estiver pronto e vencido, o job de publicação nem inicia.
+  # Mudanças no próprio batch também refazem a triagem (é segura: sem edição
+  # vencida, nada roda).
   push:
     branches: [main]
     paths:
       - 'src/content/posts/**'
+      - '.github/workflows/publish.yml'
+      - 'scripts/publish-batch.mjs'
+      - 'src/lib/editorial.mjs'
+  # Disparo principal da segunda: a função agendada da Netlify
+  # (netlify/functions/publish-batch.mjs) às 12:01, 13:01 e 14:01. O cron do
+  # GitHub atrasa horas ou nem dispara (12/10, 19/10 e 26/10/2026).
+  repository_dispatch:
+    types: [publish-batch]
   schedule:
-    # Segundas, 12:00 America/Sao_Paulo (UTC-3, sem horário de verão).
+    # Reservas, caso a Netlify falhe: segundas, 12:00, 12:30, 13:15 e 14:15
+    # America/Sao_Paulo (UTC-3, sem horário de verão). Depois que a edição
+    # sai, a triagem não acha mais nada programado e estes disparos terminam
+    # sem publicar nem enviar de novo.
     - cron: '0 15 * * 1'
-    # Reservas (12:30, 13:15 e 14:15): o GitHub às vezes descarta disparos
-    # agendados (aconteceu em 12/10/2026). Depois que a edição sai, a triagem
-    # não acha mais nada programado e estes disparos terminam sem publicar
-    # nem enviar de novo.
     - cron: '30 15 * * 1'
     - cron: '15 16 * * 1'
     - cron: '15 17 * * 1'

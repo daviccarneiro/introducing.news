@@ -20,7 +20,9 @@
  * preenchido (title, description, signature e publishedAt).
  *
  * Rodado pelo workflow "Publicar batch": em mudanças de src/content/posts
- * (o commit do Keystatic ao programar) e por cron nas segundas (12:00 BRT).
+ * (o commit do Keystatic ao programar) e nas segundas a partir das 12:00 BRT,
+ * pela função agendada da Netlify (netlify/functions/publish-batch.mjs) e
+ * pelo cron do GitHub (reserva).
  * O workflow commita o resultado e aciona o Deploy — pushes feitos com
  * GITHUB_TOKEN não disparam outros workflows por conta própria.
  */
