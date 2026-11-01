@@ -1,0 +1,9 @@
+{
+  "headline": ["Mac de [toque] e IA", "nos seus arquivos"],
+  "refs": [
+    { "logo": "apple", "label": "MacBook Pro de toque" },
+    { "logo": "openai", "label": "ChatGPT no iCloud" },
+    { "logo": "gemini", "label": "Gemini edita arquivos" },
+    { "logo": "claude", "label": "Claude e o pedágio" }
+  ]
+}
