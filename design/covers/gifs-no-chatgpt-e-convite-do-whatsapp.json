@@ -1,0 +1,9 @@
+{
+  "headline": ["GIF no ChatGPT,", "[convite] no WhatsApp"],
+  "refs": [
+    { "logo": "openai", "label": "GIFs no ChatGPT" },
+    { "logo": "claude", "label": "Finanças pessoais no Claude" },
+    { "logo": "whatsapp", "label": "Eventos do WhatsApp" },
+    { "logo": "perplexity", "label": "Teammates da Perplexity" }
+  ]
+}
